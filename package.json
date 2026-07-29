@@ -1,0 +1,58 @@
+{
+  "name": "draggable-scheduler",
+  "version": "0.1.0",
+  "description": "A headless, drag-and-drop weekly resource-scheduling grid for React. Render, drag, resize, scroll, select, and notify via callbacks — your app decides what's allowed.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --sourcemap",
+    "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@dnd-kit/core": "^6.0.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.2.2",
+    "vitest": "^4.0.16"
+  },
+  "keywords": [
+    "react",
+    "scheduler",
+    "drag-and-drop",
+    "dnd-kit",
+    "timetable",
+    "calendar",
+    "resource-planning",
+    "shift-planning"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/REPLACE_ME/draggable-scheduler.git"
+  },
+  "author": "",
+  "homepage": "https://github.com/REPLACE_ME/draggable-scheduler#readme"
+}
