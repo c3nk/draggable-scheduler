@@ -126,7 +126,7 @@ function MyScheduler() {
 }
 ```
 
-A fuller worked example is planned for `examples/basic` — see [Roadmap](#roadmap).
+A fuller worked example is planned for `examples/basic`.
 
 ## Public API
 
@@ -149,18 +149,15 @@ Everything about *why* a move is allowed, *what* a conflict means, and *how* it'
 - Preserve behavior over introducing "nice to have" abstractions.
 - Don't chase abstract generality the current use cases don't need.
 
-## Roadmap
-
-- [ ] Compiled CSS distribution (`dist/style.css`) so consumers don't need Tailwind configured on their end
-- [ ] Generic in-memory undo hook (`usePlacementHistory`)
-- [ ] Generic named-preset toolbar (`Preset<TState>`)
-- [ ] `examples/basic` — a self-contained runnable demo with mock data
-- [ ] Unit tests for the pure grid/geometry helpers
-- [ ] `formatTime`/`formatDayLabel` props with sensible built-in defaults (currently `tx`-based, tied to a bilingual string pattern)
-
 ## Contributing
 
-Issues and PRs are welcome. This project intentionally stays small — before adding a feature, consider whether it belongs in your own application code instead (see [Philosophy](#philosophy)). If you're not sure, open an issue to discuss first.
+This is a young project and could use your eyes on it — bug reports, questions, and pull requests are all genuinely welcome, including from first-time contributors.
+
+- Found a bug or have a use case that doesn't fit? [Open an issue](../../issues) — even a rough description helps.
+- Want to add something? This project intentionally stays small (see [Philosophy](#philosophy)) — open an issue first for anything beyond a bug fix, so we can talk through the approach before you put work into it.
+- Have a question, or built something with it? [Start a discussion](../../discussions) — it's genuinely nice to hear about it.
+
+If you find this useful, a star on the repo helps others find it too.
 
 ## License
 
