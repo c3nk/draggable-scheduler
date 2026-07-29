@@ -24,9 +24,32 @@ export {
   buildOccupyingIndex,
 } from './SchedulerGrid'
 
+export {
+  usePlacementHistory,
+  createPlacementHistory,
+  setPlacementHistory,
+  undoPlacementHistory,
+  clearPlacementHistory,
+} from './usePlacementHistory'
+
+export {
+  PresetToolbar,
+} from './PresetToolbar'
+
 export type {
   SchedulerTimeGridColumn,
   SchedulerTimeGridRow,
   SchedulerSlotFeedback,
   RenderEventCardContext,
 } from './SchedulerGrid'
+
+export type {
+  PlacementMap,
+  PlacementMapUpdater,
+  PlacementHistoryState,
+} from './usePlacementHistory'
+
+export type {
+  Preset,
+  PresetToolbarProps,
+} from './PresetToolbar'

@@ -69,13 +69,17 @@ The library never reads `data` itself — it's yours. Put your course/meeting/sh
 ## Usage
 
 ```tsx
+import { useState } from 'react'
 import { DndContext } from '@dnd-kit/core'
 import {
   SchedulerTimeGrid,
+  PresetToolbar,
   buildSlots,
   buildStartIndex,
   buildOccupyingIndex,
+  usePlacementHistory,
 } from 'draggable-scheduler'
+import 'draggable-scheduler/style.css'
 import type { Resource, SchedulerEvent, EventPlacement } from 'draggable-scheduler'
 
 interface MeetingData { title: string; organizer: string }
@@ -91,6 +95,13 @@ function MyScheduler() {
   const placements: Record<string, EventPlacement | null> = {
     'evt-1': { eventId: 'evt-1', resourceId: 'room-1', weekday: 1, startMinute: 9 * 60 },
   }
+  const history = usePlacementHistory(placements)
+  const [activePresetId, setActivePresetId] = useState<string | null>('all')
+
+  const presets = [
+    { id: 'all', label: 'All', state: { view: 'all' }, description: 'Show everything' },
+    { id: 'today', label: 'Today', state: { view: 'today' }, description: 'Show today only' },
+  ]
 
   const config = { workDays: [1, 2, 3, 4, 5], weekStartDay: 1, workStartMinute: 8 * 60, workEndMinute: 18 * 60, slotStepMinutes: 30 }
   const slots = buildSlots({ config, resources, locale: 'en', timeFormat: '24h' })
@@ -98,37 +109,56 @@ function MyScheduler() {
   const occupyingBySlot = buildOccupyingIndex({ events, placements, slots })
 
   return (
-    <DndContext onDragEnd={/* resolve slot, call your onBeforeMove, then onEventMove */ () => {}}>
-      <SchedulerTimeGrid
+    <>
+      <PresetToolbar
         tx={(_tr, en) => en}
-        visibleColumns={/* derive from resources x config.workDays */ []}
-        timeRows={/* derive from config */ []}
-        slotByGrid={new Map(slots.map((s) => [`${s.weekday}-${s.resourceId}-${s.startMinute}`, s]))}
-        startCourseBySlot={eventsBySlot}
-        occupyingCourseBySlot={occupyingBySlot}
-        slotFeedbackById={new Map()}
-        savedPlacements={placements}
-        placements={placements}
-        selectedCourseId={null}
-        isShiftPressed={false}
-        showEmptyPlacementNotice={false}
-        renderEventCard={(event, ctx) => (
-          <div onClick={() => ctx.onSelect(event.id)}>{event.data.title}</div>
-        )}
-        onSelectCourse={() => {}}
-        onRemoveCourse={() => {}}
-        onConvertSharedSlotToSwap={() => {}}
-        onRequireCourseSelection={() => {}}
-        onAttemptPlaceCourse={(input) => {
-          // your app decides: call onBeforeMove-style validation here, then persist.
+        presets={presets}
+        activePresetId={activePresetId}
+        onPresetSelect={(preset) => {
+          setActivePresetId(preset.id)
+          // your app decides how to apply preset.state
         }}
+        onClearSelection={() => setActivePresetId(null)}
       />
-    </DndContext>
+
+      <DndContext onDragEnd={/* resolve slot, call your onBeforeMove, then onEventMove */ () => {}}>
+        <SchedulerTimeGrid
+          tx={(_tr, en) => en}
+          visibleColumns={/* derive from resources x config.workDays */ []}
+          timeRows={/* derive from config */ []}
+          slotByGrid={new Map(slots.map((s) => [`${s.weekday}-${s.resourceId}-${s.startMinute}`, s]))}
+          startCourseBySlot={eventsBySlot}
+          occupyingCourseBySlot={occupyingBySlot}
+          slotFeedbackById={new Map()}
+          savedPlacements={placements}
+          placements={placements}
+          selectedCourseId={null}
+          isShiftPressed={false}
+          showEmptyPlacementNotice={false}
+          renderEventCard={(event, ctx) => (
+            <div onClick={() => ctx.onSelect(event.id)}>{event.data.title}</div>
+          )}
+          onSelectCourse={() => {}}
+          onRemoveCourse={() => {}}
+          onConvertSharedSlotToSwap={() => {}}
+          onRequireCourseSelection={() => {}}
+          onAttemptPlaceCourse={(input) => {
+            // your app decides: call onBeforeMove-style validation here, then persist.
+            history.setPlacements((current) => ({
+              ...current,
+              [input.courseId]: { eventId: input.courseId, resourceId: 'room-1', weekday: 1, startMinute: 9 * 60 },
+            }))
+          }}
+        />
+      </DndContext>
+    </>
   )
 }
 ```
 
-A fuller worked example is planned for `examples/basic`.
+A fuller worked example lives in [`examples/basic/BasicSchedulerExample.tsx`](./examples/basic/BasicSchedulerExample.tsx).
+
+The package ships a precompiled stylesheet at `draggable-scheduler/style.css`, which you should import once in your app if you want the grid to render with the bundled defaults.
 
 ## Public API
 
@@ -140,6 +170,8 @@ SlotCell<TEvent>            — a single droppable cell (used internally by Sche
 
 buildSlots, buildOrderedWeekdays, buildStartIndex, buildOccupyingIndex, resolveOverSlotId
 isOverlap, clonePlacements, isSamePlacement, extractEventId, resolveSlotClassName, formatWeekday
+usePlacementHistory, createPlacementHistory, setPlacementHistory, undoPlacementHistory, clearPlacementHistory
+Preset<TState>, PresetToolbar
 ```
 
 Everything about *why* a move is allowed, *what* a conflict means, and *how* it's persisted is your application's job. This library renders, drags, scrolls, and selects — it notifies you via callbacks and never makes a business decision on its own.
