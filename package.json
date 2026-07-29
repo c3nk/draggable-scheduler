@@ -51,8 +51,8 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/REPLACE_ME/draggable-scheduler.git"
+    "url": "https://github.com/c3nk/draggable-scheduler.git"
   },
-  "author": "",
-  "homepage": "https://github.com/REPLACE_ME/draggable-scheduler#readme"
+  "author": "c3nk (https://c3nk.com)",
+  "homepage": "https://github.com/c3nk/draggable-scheduler#readme"
 }

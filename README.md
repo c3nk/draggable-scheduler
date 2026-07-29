@@ -10,6 +10,8 @@ It renders a weekday x resource grid of time slots, lets users drag events betwe
 
 Useful for university timetables, meeting room booking, hospital shift/resource scheduling, manufacturing scheduling, employee shifts, equipment booking, sports facility booking, or any other weekday/time-slot resource-scheduling UI.
 
+Originally developed for and used in production by [Plansoar](https://plansoar.com), maintained by [c3nk](https://c3nk.com).
+
 ## Why
 
 Most scheduling UI libraries try to own your business rules — conflict detection, validation, persistence — bundled with the rendering. That coupling is exactly what makes them hard to adapt: your conflict rules are never quite the library's conflict rules.
