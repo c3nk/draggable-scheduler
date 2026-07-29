@@ -1,7 +1,7 @@
 {
   "name": "draggable-scheduler",
   "version": "0.1.0",
-  "description": "A headless, drag-and-drop weekly resource-scheduling grid for React. Render, drag, resize, scroll, select, and notify via callbacks — your app decides what's allowed.",
+  "description": "A React grid component for weekly resource scheduling with drag-and-drop, built on dnd-kit.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.cjs",
