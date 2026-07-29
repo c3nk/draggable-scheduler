@@ -1,20 +1,29 @@
 # draggable-scheduler
 
-A headless(-ish), drag-and-drop weekly resource-scheduling grid for React. Built on [`@dnd-kit/core`](https://dndkit.com/).
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
+[![npm version](https://img.shields.io/npm/v/draggable-scheduler.svg)](https://www.npmjs.com/package/draggable-scheduler)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
+
+A headless(-ish), drag-and-drop weekly resource-scheduling grid for React, built on [`@dnd-kit/core`](https://dndkit.com/).
 
 It renders a weekday x resource grid of time slots, lets users drag events between slots, and notifies your app of what happened — nothing more. It never decides whether a move or swap is *allowed*; your app does that and tells the grid the answer.
 
-Useful for: university timetables, meeting room booking, hospital shift/resource scheduling, manufacturing scheduling, employee shifts, equipment booking, sports facility booking, or any other weekday/time-slot resource-scheduling UI.
+Useful for university timetables, meeting room booking, hospital shift/resource scheduling, manufacturing scheduling, employee shifts, equipment booking, sports facility booking, or any other weekday/time-slot resource-scheduling UI.
 
-## Status
+## Why
 
-`v0.1.0` — freshly extracted from a production course-scheduling application, field-for-field, not redesigned. What's still in progress:
+Most scheduling UI libraries try to own your business rules — conflict detection, validation, persistence — bundled with the rendering. That coupling is exactly what makes them hard to adapt: your conflict rules are never quite the library's conflict rules.
 
-- ✅ Generic grid rendering, drag/drop, selection, slot status display — done.
-- ✅ Host-supplied card rendering via `renderEventCard`/`renderOccupyingEvent` — done.
-- 🚧 Generic in-memory undo hook (`usePlacementHistory`) — planned, not yet ported.
-- 🚧 Generic preset toolbar (`FilterPresetToolbar<TState>`) — planned, not yet ported.
-- 🚧 Compiled CSS distribution (`dist/style.css`) — the grid currently ships raw Tailwind utility class strings; your app's Tailwind `content` config needs to include this package's files until compiled CSS shipping lands.
+`draggable-scheduler` takes the opposite approach: it only renders, drags, scrolls, and selects. It notifies your app via callbacks (`onEventMove`, `onBeforeMove`, `onSelectionChange`, ...) and your app decides everything else. This keeps the library small, predictable, and usable well outside its original domain.
+
+## Features
+
+- Weekday x resource grid rendering with a customizable time axis
+- Drag-and-drop event placement via `@dnd-kit/core`
+- Slot selection, shared-slot ("double-booked") indication, and swap-candidate detection
+- A `renderEventCard` escape hatch — you fully control how a placed event looks and whether/how it's draggable
+- Zero business logic: no conflict detection, no persistence, no fetching, no opinions about your domain
+- A generic `Resource<TData>`/`SchedulerEvent<TData>` model — attach any data shape and read it back in your own rendering
 
 ## Install
 
@@ -117,7 +126,7 @@ function MyScheduler() {
 }
 ```
 
-A fuller worked example is planned for `examples/basic`.
+A fuller worked example is planned for `examples/basic` — see [Roadmap](#roadmap).
 
 ## Public API
 
@@ -137,7 +146,21 @@ Everything about *why* a move is allowed, *what* a conflict means, and *how* it'
 
 - No business logic. No conflict detection. No persistence. No fetching.
 - Prefer many small, composable pieces over one big configurable component.
-- Preserve behavior over introducing "nice to have" abstractions — see `MIGRATION_PLAN.md` for what's deliberately deferred.
+- Preserve behavior over introducing "nice to have" abstractions.
+- Don't chase abstract generality the current use cases don't need.
+
+## Roadmap
+
+- [ ] Compiled CSS distribution (`dist/style.css`) so consumers don't need Tailwind configured on their end
+- [ ] Generic in-memory undo hook (`usePlacementHistory`)
+- [ ] Generic named-preset toolbar (`Preset<TState>`)
+- [ ] `examples/basic` — a self-contained runnable demo with mock data
+- [ ] Unit tests for the pure grid/geometry helpers
+- [ ] `formatTime`/`formatDayLabel` props with sensible built-in defaults (currently `tx`-based, tied to a bilingual string pattern)
+
+## Contributing
+
+Issues and PRs are welcome. This project intentionally stays small — before adding a feature, consider whether it belongs in your own application code instead (see [Philosophy](#philosophy)). If you're not sure, open an issue to discuss first.
 
 ## License
 
