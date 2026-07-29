@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1 - 2026-07-29
+
+Patch release for npm republish.
+
+### Changed
+
+- Bumped package version to `0.1.1` so the package can be published after `0.1.0` was already released to npm.
+
 ## 0.1.0 - 2026-07-29
 
 Initial public release of `draggable-scheduler`.
