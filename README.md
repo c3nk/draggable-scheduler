@@ -6,6 +6,14 @@
 
 A headless(-ish), drag-and-drop weekly resource-scheduling grid for React, built on [`@dnd-kit/core`](https://dndkit.com/).
 
+| Browser | Support |
+| --- | --- |
+| Chrome | Latest 2 stable versions |
+| Edge | Latest 2 stable versions |
+| Firefox | Latest 2 stable versions |
+| Safari | Latest 2 stable versions |
+| iOS Safari | Latest 2 stable versions |
+
 It renders a weekday x resource grid of time slots, lets users drag events between slots, and notifies your app of what happened — nothing more. It never decides whether a move or swap is *allowed*; your app does that and tells the grid the answer.
 
 Useful for university timetables, meeting room booking, hospital shift/resource scheduling, manufacturing scheduling, employee shifts, equipment booking, sports facility booking, or any other weekday/time-slot resource-scheduling UI.
