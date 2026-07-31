@@ -11,7 +11,7 @@
 //
 // Extracted from a production course-scheduling application, field-for-field, not redesigned.
 
-import { Fragment, type ReactNode } from 'react'
+import { Fragment, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import type { DragEndEvent, DragStartEvent, Over } from '@dnd-kit/core'
 import type {
@@ -22,7 +22,14 @@ import type {
   Slot,
   DragEventData,
   SlotStatus,
+  SchedulerA11yText,
 } from './types'
+import {
+  buildSlotA11yLabel,
+  buildSlotMatrix,
+  getDefaultA11yText,
+  resolveNextSlotId,
+} from './keyboard'
 
 const ALL_WEEK_DAYS: number[] = [0, 1, 2, 3, 4, 5, 6]
 
@@ -280,12 +287,19 @@ export function SlotCell<TEvent extends SchedulerEvent<unknown>>({
   selectedCourseId,
   canConvertToSwap,
   tx,
+  tabIndex,
+  ariaLabel,
+  ariaSelected,
+  isFocused,
   renderEventCard,
   renderOccupyingEvent,
   onClickSlot,
   onSelectCourse,
   onRemoveCourse,
   onConvertSharedSlotToSwap,
+  onFocusSlot,
+  onKeyDownSlot,
+  onRegisterNode,
 }: {
   slot: Slot
   status: SlotStatus
@@ -295,12 +309,19 @@ export function SlotCell<TEvent extends SchedulerEvent<unknown>>({
   selectedCourseId: string | null
   canConvertToSwap: boolean
   tx: (tr: string, en: string) => string
+  tabIndex: number
+  ariaLabel: string
+  ariaSelected: boolean
+  isFocused: boolean
   renderEventCard: (event: TEvent, context: RenderEventCardContext) => ReactNode
   renderOccupyingEvent?: (event: TEvent) => ReactNode
   onClickSlot: (event: { shiftKey: boolean }) => void
   onSelectCourse: (courseId: string | null) => void
   onRemoveCourse: (courseId: string) => void
   onConvertSharedSlotToSwap: () => void
+  onFocusSlot: (slotId: string) => void
+  onKeyDownSlot: (event: ReactKeyboardEvent<HTMLDivElement>, slotId: string) => void
+  onRegisterNode: (slotId: string, node: HTMLDivElement | null) => void
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: slot.id })
   const hasPlacedCourse = startCourses.length > 0 || occupyingCourses.length > 0
@@ -308,12 +329,23 @@ export function SlotCell<TEvent extends SchedulerEvent<unknown>>({
   const baseSlotClass = hasPlacedCourse ? 'border-slate-300 bg-slate-100/85' : resolveSlotClassName(status)
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node)
+        onRegisterNode(slot.id, node)
+      }}
+      role="gridcell"
+      tabIndex={tabIndex}
+      aria-label={ariaLabel}
+      aria-selected={ariaSelected}
+      data-focused={isFocused ? 'true' : 'false'}
       className={`min-h-[116px] rounded-lg border p-3 ${isOver ? 'border-blue-500 bg-blue-100/85' : baseSlotClass}`}
+      onFocus={() => onFocusSlot(slot.id)}
+      onKeyDown={(event) => onKeyDownSlot(event, slot.id)}
       onClick={(event) => {
         const target = event.target as HTMLElement | null
         if (target?.closest('[data-course-card="true"]')) return
         if (target?.closest('[data-shared-slot-action="true"]')) return
+        onFocusSlot(slot.id)
         onClickSlot({ shiftKey: event.shiftKey })
       }}
     >
@@ -411,6 +443,7 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
   onConvertSharedSlotToSwap,
   onRequireCourseSelection,
   onAttemptPlaceCourse,
+  a11yText,
 }: {
   tx: (tr: string, en: string) => string
   visibleColumns: SchedulerTimeGridColumn[]
@@ -431,15 +464,101 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
   onConvertSharedSlotToSwap: (slotCourseIds: string[]) => void
   onRequireCourseSelection: () => void
   onAttemptPlaceCourse: (input: { courseId: string; slotId: string; forceSharedSlot: boolean }) => void
+  a11yText?: SchedulerA11yText
 }) {
+  const resolvedA11yText = a11yText ?? getDefaultA11yText()
+  const instructionsId = useId()
+  const liveRegionId = useId()
+  const slotMatrix = useMemo(
+    () => buildSlotMatrix({ visibleColumns, timeRows, slotByGrid }),
+    [slotByGrid, timeRows, visibleColumns],
+  )
+  const firstSlotId = slotMatrix.cells[0]?.find((slot) => slot != null)?.id ?? null
+  const [focusedSlotId, setFocusedSlotId] = useState<string | null>(firstSlotId)
+  const [liveMessage, setLiveMessage] = useState<string>('')
+  const slotNodeById = useRef(new Map<string, HTMLDivElement | null>())
+
+  useEffect(() => {
+    setFocusedSlotId((current) => {
+      if (current && slotMatrix.positionBySlotId.has(current)) return current
+      return firstSlotId
+    })
+  }, [firstSlotId, slotMatrix.positionBySlotId])
+
+  const announce = (message: string) => {
+    setLiveMessage(message)
+  }
+
+  const focusSlot = (slotId: string) => {
+    setFocusedSlotId(slotId)
+    const node = slotNodeById.current.get(slotId)
+    node?.focus()
+  }
+
+  const handleSlotKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>, slotId: string) => {
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'ArrowUp' || event.key === 'ArrowDown' || event.key === 'Home' || event.key === 'End') {
+      event.preventDefault()
+      const nextSlotId = resolveNextSlotId({ matrix: slotMatrix, currentSlotId: slotId, key: event.key })
+      if (nextSlotId) {
+        focusSlot(nextSlotId)
+        announce(resolvedA11yText('focusMoved'))
+      }
+      return
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      if (!selectedCourseId) {
+        onRequireCourseSelection()
+        announce(resolvedA11yText('selectionRequired'))
+        return
+      }
+      onAttemptPlaceCourse({
+        courseId: selectedCourseId,
+        slotId,
+        forceSharedSlot: Boolean(event.shiftKey),
+      })
+      announce(resolvedA11yText('placementRequested'))
+      return
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      onSelectCourse(null)
+      announce(resolvedA11yText('selectionCleared'))
+      return
+    }
+    if (event.key === 'Backspace' || event.key === 'Delete') {
+      if (!selectedCourseId) return
+      event.preventDefault()
+      onRemoveCourse(selectedCourseId)
+      onSelectCourse(null)
+      announce(resolvedA11yText('removeRequested'))
+    }
+  }
+
+  const gridLabel = resolvedA11yText('gridLabel')
+  const instructions = resolvedA11yText('gridInstructions')
   return (
     <div className="mt-3 min-h-0 flex-1 overflow-auto">
+      <div id={liveRegionId} aria-live="polite" aria-atomic="true" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap' }}>
+        {liveMessage}
+      </div>
       {visibleColumns.length === 0 ? (
         <div className="rounded border border-dashed border-slate-300 p-3 text-sm text-slate-500">
           {tx('Görüntülemek için en az bir gün ve bir mekan seçin.', 'Select at least one day and one room.')}
         </div>
       ) : (
-        <div className="grid min-w-[1200px] gap-x-2 gap-y-1" style={{ gridTemplateColumns: `72px repeat(${visibleColumns.length}, minmax(170px, 1fr))` }}>
+        <div
+          role="grid"
+          aria-label={gridLabel}
+          aria-describedby={`${instructionsId} ${liveRegionId}`}
+          aria-rowcount={timeRows.length}
+          aria-colcount={visibleColumns.length}
+          className="grid min-w-[1200px] gap-x-2 gap-y-1"
+          style={{ gridTemplateColumns: `72px repeat(${visibleColumns.length}, minmax(170px, 1fr))` }}
+        >
+          <span id={instructionsId} style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap' }}>
+            {instructions}
+          </span>
           <div className="sticky left-0 z-10 rounded border border-slate-200 bg-slate-100 p-2 text-center text-xs font-semibold">{tx('Saat', 'Time')}</div>
           {visibleColumns.map((column) => (
             <div key={`${column.weekday}-${column.resourceId}`} className="rounded border border-slate-200 bg-slate-100 p-2 text-center text-xs font-semibold">
@@ -469,6 +588,7 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
                   && slotCourseIds.every((id) => savedPlacements[id] != null)
                   && slotCourseIds.some((id) => isSamePlacement(savedPlacements[id] ?? null, placements[id] ?? null))
                   && slotCourseIds.some((id) => !isSamePlacement(savedPlacements[id] ?? null, placements[id] ?? null))
+                const isFocused = focusedSlotId === slot.id
                 return (
                   <SlotCell
                     key={slot.id}
@@ -480,18 +600,47 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
                     selectedCourseId={selectedCourseId}
                     canConvertToSwap={canConvertToSwap}
                     tx={tx}
+                    tabIndex={isFocused || focusedSlotId == null ? 0 : -1}
+                    ariaLabel={buildSlotA11yLabel({
+                      slot,
+                      status: feedback.status,
+                      selected: isFocused,
+                      occupied: startCourses.length > 0 || occupyingCourses.length > 0,
+                      a11yText: resolvedA11yText,
+                    })}
+                    ariaSelected={isFocused}
+                    isFocused={isFocused}
                     renderEventCard={renderEventCard}
                     renderOccupyingEvent={renderOccupyingEvent}
                     onSelectCourse={onSelectCourse}
                     onRemoveCourse={onRemoveCourse}
                     onConvertSharedSlotToSwap={() => onConvertSharedSlotToSwap(slotCourseIds)}
+                    onFocusSlot={(slotId) => {
+                      setFocusedSlotId(slotId)
+                      const focusedSlot = slotByGrid.get(`${column.weekday}-${column.resourceId}-${row.startMinute}`)
+                      if (focusedSlot) {
+                        announce(buildSlotA11yLabel({
+                          slot: focusedSlot,
+                          status: feedback.status,
+                          selected: true,
+                          occupied: startCourses.length > 0 || occupyingCourses.length > 0,
+                          a11yText: resolvedA11yText,
+                        }))
+                      }
+                    }}
+                    onKeyDownSlot={handleSlotKeyDown}
+                    onRegisterNode={(slotId, node) => {
+                      slotNodeById.current.set(slotId, node)
+                    }}
                     onClickSlot={(event) => {
                       if (!selectedCourseId) {
                         onRequireCourseSelection()
+                        announce(resolvedA11yText('selectionRequired'))
                         return
                       }
                       const clickShift = Boolean(event.shiftKey) || isShiftPressed
                       onAttemptPlaceCourse({ courseId: selectedCourseId, slotId: slot.id, forceSharedSlot: clickShift })
+                      announce(resolvedA11yText('placementRequested'))
                     }}
                   />
                 )

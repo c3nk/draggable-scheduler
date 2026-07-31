@@ -132,3 +132,13 @@
 .min-h-\[110px\].items-center.justify-center {
   flex-direction: column;
 }
+
+[role="gridcell"][data-focused="true"] {
+  outline: 2px solid rgba(59, 130, 246, 1);
+  outline-offset: -2px;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.75);
+}
+
+[role="gridcell"][aria-selected="true"] {
+  position: relative;
+}

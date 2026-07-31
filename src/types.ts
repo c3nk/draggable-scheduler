@@ -55,3 +55,22 @@ export interface DragEventData {
 }
 
 export type SlotStatus = 'idle' | 'available' | 'warning' | 'conflict'
+
+export type SchedulerA11yKey =
+  | 'gridLabel'
+  | 'gridInstructions'
+  | 'slotLabel'
+  | 'slotAvailable'
+  | 'slotOccupied'
+  | 'slotWarning'
+  | 'slotConflict'
+  | 'selectionRequired'
+  | 'selectionCleared'
+  | 'placementRequested'
+  | 'removeRequested'
+  | 'focusMoved'
+
+export type SchedulerA11yText = (
+  key: SchedulerA11yKey,
+  context?: Record<string, string | number | boolean | null | undefined>,
+) => string

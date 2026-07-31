@@ -6,6 +6,8 @@ export type {
   Slot,
   DragEventData,
   SlotStatus,
+  SchedulerA11yKey,
+  SchedulerA11yText,
 } from './types'
 
 export {

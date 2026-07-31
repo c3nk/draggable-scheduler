@@ -174,6 +174,18 @@ The package ships a precompiled stylesheet at `draggable-scheduler/style.css`, w
 
 The published package targets these browsers in `package.json` via `browserslist`, and the support matrix is covered by tests so it does not drift accidentally.
 
+## Keyboard Support
+
+The grid supports roving focus and generic keyboard navigation:
+
+- `Arrow` keys move between slots
+- `Home` and `End` move to the start or end of the current row
+- `Enter` and `Space` request placement into the focused slot
+- `Escape` clears the current selection
+- `Delete` and `Backspace` request removal of the selected event
+
+Screen reader text is intentionally generic and domain-free. If you need custom wording, pass your own `a11yText` function.
+
 ## Public API
 
 ```
