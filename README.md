@@ -35,7 +35,8 @@ It comes in two layers you can pick between:
 
 - Weekday x resource grid rendering with a customizable time axis
 - Drag-and-drop event placement via `@dnd-kit/core`
-- A bundled, draggable **`DefaultEventCard`** with the UI affordances you expect — a move/drag handle, a remove (delete) icon, a selection frame and a duration badge — all with inline SVG icons and no icon dependency
+- A bundled, draggable **`DefaultEventCard`** with the UI affordances you expect — a move/drag handle, a remove (delete) icon, a selection frame and a duration badge — all with inline SVG icons and no icon dependency (draggable from the whole card by default; `dragActivator="handle"` to require the grip)
+- 12h / 24h time axis via a single `timeFormat` prop (drives both the visible labels and the screen-reader slot ranges)
 - Slot selection, shared-slot ("double-booked") indication, and swap-candidate detection
 - A `renderEventCard` escape hatch — override the default card entirely, or wrap it and pass your domain fields as `children`
 - Zero business logic: no conflict detection, no persistence, no fetching, no opinions about your domain
