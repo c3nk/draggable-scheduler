@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.2.0 - 2026-07-31
+
+Generic API cleanup + batteries-included UI. **Breaking** — grid prop names moved from `course` to `event` vocabulary.
+
+### Added
+
+- `<Scheduler>` — a batteries-included wrapper that owns the `DndContext`, sensors, 3-tier collision detection and drag-end → slot resolution. Wire business rules through `onBeforeMove(eventId, target) → DropEvaluation` (sync or `Promise`), `onEventMove`, `onEventRemove`, and `onConvertSharedSlotToSwap`.
+- `DefaultEventCard` — a composable, draggable default card shipping the UI affordances (drag/move handle, remove/delete icon, selection frame, duration badge) with inline SVG icons and zero icon dependency. Domain content is passed as `children`; every affordance is toggleable and every icon overridable.
+- `schedulerCollisionDetection` — the `pointerWithin → rectIntersection → closestCenter` strategy, exported for low-level consumers.
+- `formatDurationLabel`, `DropTarget`, `DropEvaluation`, `SchedulerProps`, `DefaultEventCardProps` exports.
+- `renderEventCard` is now **optional** on `SchedulerTimeGrid`/`SlotCell` — it falls back to `DefaultEventCard`.
+
+### Changed
+
+- **Breaking:** `SchedulerTimeGrid`/`SlotCell` props renamed from `course` to generic `event` vocabulary: `selectedCourseId → selectedEventId`, `startCourseBySlot → startEventBySlot`, `occupyingCourseBySlot → occupyingEventBySlot`, `onSelectCourse → onSelectEvent`, `onRemoveCourse → onRemoveEvent`, `onRequireCourseSelection → onRequireEventSelection`, `onAttemptPlaceCourse({ courseId }) → onAttemptPlaceEvent({ eventId })`. The `resolveOverSlotId` debug payload field `inferredCourseId → inferredEventId`.
+- Genericized the built-in default copy strings (removed "course"/"room"/"classroom" domain wording).
+
+### Fixed
+
+- Bundled `style.css` was missing `text-slate-700`, `mb-2` and `leading-tight`; added them plus the classes the new default card needs. `scripts/build-style.mjs` now verifies every utility class used by components exists in the stylesheet and fails the build otherwise, so this can't silently drift again.
+- Roving-tabindex initial focus now scans the whole slot matrix instead of only the first row, so a leading empty row no longer makes every cell tabbable.
+
 ## 0.1.2 - 2026-07-31
 
 Generic accessibility text helper release.
