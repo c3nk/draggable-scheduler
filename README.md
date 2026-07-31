@@ -183,6 +183,7 @@ The grid supports roving focus and generic keyboard navigation:
 - `Arrow` keys move between slots
 - `Home` and `End` move to the start or end of the current row
 - `Enter` and `Space` request placement into the focused slot
+- `Shift + Enter` and `Shift + Space` request shared-slot placement or swap-style handling when your app supports it
 - `Escape` clears the current selection
 - `Delete` and `Backspace` request removal of the selected event
 
