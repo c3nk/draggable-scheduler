@@ -129,7 +129,7 @@ export function BasicSchedulerExample() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(events[0]?.id ?? null)
 
   const slots = useMemo(
-    () => buildSlots({ config, resources, locale: 'en', timeFormat: '24h' }),
+    () => buildSlots({ config, resources, locale: 'en' }),
     [],
   )
   const slotById = useMemo(() => new Map(slots.map((slot) => [slot.id, slot] as const)), [slots])

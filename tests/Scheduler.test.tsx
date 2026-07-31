@@ -45,6 +45,21 @@ describe('Scheduler wrapper', () => {
     expect(markup).toContain('aria-label="Remove"')
   })
 
+  it('renders a 12h time axis when timeFormat is 12h', () => {
+    const markup = renderToStaticMarkup(
+      createElement(Scheduler<SchedulerEvent>, {
+        resources,
+        events,
+        placements,
+        config,
+        timeFormat: '12h',
+        onEventMove: () => {},
+      }),
+    )
+    expect(markup).toContain('9:00 AM')
+    expect(markup).not.toContain('09:00-09:30')
+  })
+
   it('only builds columns for configured work days', () => {
     const markup = renderToStaticMarkup(
       createElement(Scheduler<SchedulerEvent>, {
