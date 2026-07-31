@@ -13,6 +13,7 @@ Generic API cleanup + batteries-included UI. **Breaking** — grid prop names mo
 - `renderEventCard` is now **optional** on `SchedulerTimeGrid`/`SlotCell` — it falls back to `DefaultEventCard`.
 - Real 12h/24h support: `timeFormat` on `<Scheduler>` (and `SchedulerTimeGrid`) now drives the time-axis labels and the screen-reader slot ranges via the new `formatTimeOfDay` helper.
 - `DefaultEventCard` `dragActivator` prop (`'card'` default, or `'handle'`): the whole card is draggable by default, matching typical card UX; the grip stays a visual cue. `<Scheduler>`'s pointer sensor uses a 4px activation distance so a plain click still selects.
+- `<Scheduler>` now covers the richer host flows too: an `onRequireEventSelection` prop (fires when a click/keyboard placement is attempted with nothing selected), and `DropTarget` gained `forceSharedSlot` (Shift held during drag/click) and `occupantEventIds` (events already in the target slot) so the host can decide move-vs-swap and shared-slot placement from `onBeforeMove`/`onEventMove` without inspecting placements itself.
 
 ### Changed
 

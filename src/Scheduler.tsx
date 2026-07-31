@@ -64,6 +64,11 @@ export interface DropTarget {
   resourceId: string
   weekday: number
   startMinute: number
+  /** True when Shift was held (drag or click) — e.g. "force shared slot". */
+  forceSharedSlot: boolean
+  /** Ids of events already sitting in / overlapping the target slot, minus the
+   *  moved event. Lets the host decide move-vs-swap without inspecting placements. */
+  occupantEventIds: string[]
 }
 
 /** Host verdict for a proposed move. `allowed: false` cancels the move. */
@@ -99,6 +104,8 @@ export interface SchedulerProps<TEvent extends SchedulerEvent<unknown>> {
 
   selectedEventId?: string | null
   onSelectEvent?: (eventId: string | null) => void
+  /** Called on a click/keyboard placement attempt while nothing is selected. */
+  onRequireEventSelection?: () => void
 
   /** Optional validation run before a move is applied (drag or click/keyboard). */
   onBeforeMove?: (eventId: string, target: DropTarget) => DropEvaluation | Promise<DropEvaluation>
@@ -127,6 +134,7 @@ export function Scheduler<TEvent extends SchedulerEvent<unknown>>({
   a11yText,
   selectedEventId = null,
   onSelectEvent,
+  onRequireEventSelection,
   onBeforeMove,
   onEventMove,
   onEventRemove,
@@ -203,14 +211,22 @@ export function Scheduler<TEvent extends SchedulerEvent<unknown>>({
 
   const resolvedSavedPlacements = savedPlacements ?? placements
 
-  async function commitMove(eventId: string, slotId: string) {
+  async function commitMove(eventId: string, slotId: string, forceSharedSlot: boolean) {
     const slot = slotById.get(slotId)
     if (!slot) return
+    const occupantEventIds = [
+      ...(startEventBySlot.get(slotId) ?? []),
+      ...(occupyingEventBySlot.get(slotId) ?? []),
+    ]
+      .map((item) => item.id)
+      .filter((id) => id !== eventId)
     const target: DropTarget = {
       slotId,
       resourceId: slot.resourceId,
       weekday: slot.weekday,
       startMinute: slot.startMinute,
+      forceSharedSlot,
+      occupantEventIds,
     }
     if (onBeforeMove) {
       const evaluation = await onBeforeMove(eventId, target)
@@ -223,7 +239,7 @@ export function Scheduler<TEvent extends SchedulerEvent<unknown>>({
     const eventId = extractEventId(event)
     const slotId = resolveOverSlotId({ over: event.over, slotById, slotByGrid, placements })
     if (!eventId || !slotId) return
-    void commitMove(eventId, slotId)
+    void commitMove(eventId, slotId, isShiftPressed)
   }
 
   return (
@@ -248,9 +264,9 @@ export function Scheduler<TEvent extends SchedulerEvent<unknown>>({
         onSelectEvent={(eventId) => onSelectEvent?.(eventId)}
         onRemoveEvent={(eventId) => onEventRemove?.(eventId)}
         onConvertSharedSlotToSwap={(eventIds) => onConvertSharedSlotToSwap?.(eventIds)}
-        onRequireEventSelection={() => {}}
-        onAttemptPlaceEvent={({ eventId, slotId }) => {
-          void commitMove(eventId, slotId)
+        onRequireEventSelection={() => onRequireEventSelection?.()}
+        onAttemptPlaceEvent={({ eventId, slotId, forceSharedSlot }) => {
+          void commitMove(eventId, slotId, forceSharedSlot)
         }}
       />
     </DndContext>
