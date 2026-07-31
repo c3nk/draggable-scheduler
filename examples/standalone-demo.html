@@ -405,7 +405,6 @@
               <button class="primary" id="resetBtn" type="button">Reset demo</button>
               <button class="secondary" id="clearBtn" type="button">Clear selection</button>
               <button class="ghost" id="clearPlacementsBtn" type="button">Clear placements</button>
-              <button class="ghost" id="swapBtn" type="button">Swap placements</button>
             </div>
           </div>
 
@@ -420,7 +419,7 @@
               Arrow keys move focus, Enter or Space place into the focused slot, Shift + Enter or Shift + Space request a shared slot, and Delete or Backspace remove the selected event.
             </div>
             <div class="hint">
-              Swap is kept separate on purpose: use the swap action when you want to exchange two placed events.
+              When a slot becomes shared, the inline <strong>Convert to swap</strong> action appears just like in the app.
             </div>
           </div>
 
@@ -498,7 +497,6 @@
       const resetBtn = document.getElementById('resetBtn');
       const clearBtn = document.getElementById('clearBtn');
       const clearPlacementsBtn = document.getElementById('clearPlacementsBtn');
-      const swapBtn = document.getElementById('swapBtn');
 
       function minuteLabel(minute) {
         const h = String(Math.floor(minute / 60)).padStart(2, '0');
@@ -637,12 +635,6 @@
         render();
       }
 
-      function getPlacedEventIds() {
-        return events
-          .map((event) => event.id)
-          .filter((eventId) => state.placements[eventId]);
-      }
-
       function swapPlacements(leftEventId, rightEventId) {
         if (!leftEventId || !rightEventId || leftEventId === rightEventId) return;
         const leftPlacement = state.placements[leftEventId];
@@ -694,7 +686,21 @@
                 const stack = document.createElement('div');
                 stack.className = `slot-stack${startEvents.length > 1 ? ' shared' : ''}`;
 
-                if (startEvents.length > 1) {
+                const slotCourseIds = [...startEvents, ...occupyingEvents].map((event) => event.id)
+                if (slotCourseIds.length === 2) {
+                  const convertAction = document.createElement('button');
+                  convertAction.type = 'button';
+                  convertAction.className = 'slot-shared-badge';
+                  convertAction.style.cursor = 'pointer';
+                  convertAction.setAttribute('data-shared-slot-action', 'true');
+                  convertAction.textContent = '⇄ Convert to swap';
+                  convertAction.addEventListener('pointerdown', (event) => event.stopPropagation());
+                  convertAction.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    swapPlacements(slotCourseIds[0], slotCourseIds[1]);
+                  });
+                  stack.appendChild(convertAction);
+                } else if (startEvents.length > 1) {
                   const badge = document.createElement('div');
                   badge.className = 'slot-shared-badge';
                   badge.textContent = `Shared slot (${startEvents.length})`;
@@ -821,7 +827,6 @@
         renderSelection();
         renderEvents();
         renderGrid();
-        swapBtn.disabled = getPlacedEventIds().length < 2;
       }
 
       resetBtn.addEventListener('click', () => {
@@ -841,19 +846,6 @@
         state.selectedEventId = null;
         state.draggedEventId = null;
         render();
-      });
-
-      swapBtn.addEventListener('click', () => {
-        const placedEventIds = getPlacedEventIds();
-        if (placedEventIds.length < 2) return;
-
-        const selectedIndex = state.selectedEventId ? placedEventIds.indexOf(state.selectedEventId) : -1;
-        const leftEventId = selectedIndex >= 0 ? placedEventIds[selectedIndex] : placedEventIds[0];
-        const rightEventId = selectedIndex >= 0
-          ? placedEventIds[(selectedIndex + 1) % placedEventIds.length]
-          : placedEventIds[1];
-
-        swapPlacements(leftEventId, rightEventId);
       });
 
       render();
