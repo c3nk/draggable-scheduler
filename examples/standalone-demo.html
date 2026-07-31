@@ -471,6 +471,13 @@
         { start: 10 * 60 + 30, end: 11 * 60, label: '10:30-11:00' },
       ];
 
+      const savedPlacements = {
+        'event-1': { weekday: 1, resourceId: 'room-a', start: 9 * 60 },
+        'event-2': { weekday: 1, resourceId: 'room-a', start: 10 * 60 },
+        'event-3': { weekday: 2, resourceId: 'room-b', start: 9 * 60 + 30 },
+        'event-4': { weekday: 4, resourceId: 'room-b', start: 10 * 60 },
+      };
+
       const initialPlacements = {
         'event-1': { weekday: 1, resourceId: 'room-a', start: 9 * 60 },
         'event-2': { weekday: 1, resourceId: 'room-a', start: 9 * 60 + 30 },
@@ -548,6 +555,12 @@
             return placement.start < start && placement.start + event.duration > start;
           })
           .map(({ event }) => event);
+      }
+
+      function isSamePlacement(left, right) {
+        if (!left && !right) return true;
+        if (!left || !right) return false;
+        return left.weekday === right.weekday && left.resourceId === right.resourceId && left.start === right.start;
       }
 
       function getPlacementForEvent(eventId) {
@@ -635,16 +648,6 @@
         render();
       }
 
-      function swapPlacements(leftEventId, rightEventId) {
-        if (!leftEventId || !rightEventId || leftEventId === rightEventId) return;
-        const leftPlacement = state.placements[leftEventId];
-        const rightPlacement = state.placements[rightEventId];
-        state.placements[leftEventId] = rightPlacement ? { ...rightPlacement } : null;
-        state.placements[rightEventId] = leftPlacement ? { ...leftPlacement } : null;
-        state.selectedEventId = rightEventId;
-        render();
-      }
-
       function renderGrid() {
         gridEl.innerHTML = '';
         gridEl.appendChild(makeCorner('Time / Day / Room'));
@@ -687,7 +690,11 @@
                 stack.className = `slot-stack${startEvents.length > 1 ? ' shared' : ''}`;
 
                 const slotCourseIds = [...startEvents, ...occupyingEvents].map((event) => event.id)
-                if (slotCourseIds.length === 2) {
+                const canConvertToSwap = slotCourseIds.length === 2
+                  && slotCourseIds.every((id) => savedPlacements[id] != null)
+                  && slotCourseIds.some((id) => isSamePlacement(savedPlacements[id], state.placements[id]))
+                  && slotCourseIds.some((id) => !isSamePlacement(savedPlacements[id], state.placements[id]))
+                if (canConvertToSwap) {
                   const convertAction = document.createElement('button');
                   convertAction.type = 'button';
                   convertAction.className = 'slot-shared-badge';
@@ -697,7 +704,13 @@
                   convertAction.addEventListener('pointerdown', (event) => event.stopPropagation());
                   convertAction.addEventListener('click', (event) => {
                     event.stopPropagation();
-                    swapPlacements(slotCourseIds[0], slotCourseIds[1]);
+                    const [leftEventId, rightEventId] = slotCourseIds;
+                    const leftPlacement = state.placements[leftEventId];
+                    const rightPlacement = state.placements[rightEventId];
+                    state.placements[leftEventId] = rightPlacement ? { ...rightPlacement } : null;
+                    state.placements[rightEventId] = leftPlacement ? { ...leftPlacement } : null;
+                    state.selectedEventId = rightEventId;
+                    render();
                   });
                   stack.appendChild(convertAction);
                 } else if (startEvents.length > 1) {
