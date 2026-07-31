@@ -166,6 +166,8 @@ function MyScheduler() {
 
 A fuller worked example lives in [`examples/basic/BasicSchedulerExample.tsx`](./examples/basic/BasicSchedulerExample.tsx).
 
+If you want a no-install preview you can open directly in a browser, download [`examples/standalone-demo.html`](./examples/standalone-demo.html). It is a single-file HTML demo with sample content and no build step.
+
 The package ships a precompiled stylesheet at `draggable-scheduler/style.css`, which you should import once in your app if you want the grid to render with the bundled defaults.
 
 ## Browser Support
