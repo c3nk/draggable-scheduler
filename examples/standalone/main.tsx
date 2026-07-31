@@ -41,7 +41,7 @@ const initial: Record<string, EventPlacement | null> = {
   e1: { eventId: 'e1', resourceId: 'room-a', weekday: 1, startMinute: 9 * 60 },
   e2: { eventId: 'e2', resourceId: 'room-b', weekday: 2, startMinute: 10 * 60 },
   e3: { eventId: 'e3', resourceId: 'room-c', weekday: 3, startMinute: 11 * 60 },
-  e4: { eventId: 'e4', resourceId: 'room-a', weekday: 1, startMinute: 11 * 60 },
+  e4: { eventId: 'e4', resourceId: 'room-b', weekday: 1, startMinute: 9 * 60 },
 }
 
 function Demo() {
@@ -67,7 +67,8 @@ function Demo() {
         <h1 style={{ margin: 0, fontSize: 20 }}>draggable-scheduler — real package demo</h1>
         <p style={{ margin: '4px 0', fontSize: 13, color: '#475569' }}>
           Each placed card shows the bundled <b>move handle</b> (⠿) and <b>delete icon</b> (🗑) from <code>DefaultEventCard</code>.
-          Drag a card to move it. Click a card to select, then click a slot to place. Hold <b>Shift</b> while clicking a slot to force a shared slot.
+          Drag a card onto an empty slot to move it. Drag a card <b>onto another card</b> to <b>swap</b> the two.
+          Hold <b>Shift</b> while dropping onto an occupied slot to force a <b>shared slot</b> instead of swapping.
         </p>
         <div style={{ fontSize: 13, fontWeight: 600 }}>
           Shift: <span style={{ color: shift ? '#059669' : '#dc2626' }}>{shift ? 'ON' : 'OFF'}</span>
@@ -85,10 +86,18 @@ function Demo() {
         onSelectEvent={setSelectedEventId}
         onBeforeMove={(_id, _t: DropTarget) => ({ allowed: true })}
         onEventMove={(eventId, target) => {
-          setPlacements((cur) => ({
-            ...cur,
-            [eventId]: { eventId, resourceId: target.resourceId, weekday: target.weekday, startMinute: target.startMinute },
-          }))
+          setPlacements((cur) => {
+            const from = cur[eventId] ?? null
+            const moved: EventPlacement = { eventId, resourceId: target.resourceId, weekday: target.weekday, startMinute: target.startMinute }
+            const occupant = target.occupantEventIds.find((id) => id !== eventId)
+            // Host-owned rule (mirrors the original app): a plain drop onto a single
+            // occupant SWAPS the two; holding Shift forces a shared (double-booked) slot.
+            if (occupant && !target.forceSharedSlot && from) {
+              const occupantTakes: EventPlacement = { eventId: occupant, resourceId: from.resourceId, weekday: from.weekday, startMinute: from.startMinute }
+              return { ...cur, [eventId]: moved, [occupant]: occupantTakes }
+            }
+            return { ...cur, [eventId]: moved }
+          })
           setSelectedEventId(eventId)
         }}
         onEventRemove={(eventId) => {
