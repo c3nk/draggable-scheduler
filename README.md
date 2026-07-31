@@ -153,7 +153,7 @@ Two worked examples ship in the repo:
 - [`examples/wrapper/WrapperSchedulerExample.tsx`](./examples/wrapper/WrapperSchedulerExample.tsx) — the `<Scheduler>` path above.
 - [`examples/basic/BasicSchedulerExample.tsx`](./examples/basic/BasicSchedulerExample.tsx) — the low-level `<SchedulerTimeGrid>` path with a host-owned `DndContext` and a fully custom card.
 
-If you want a no-install preview you can open directly in a browser, download [`examples/standalone-demo.html`](./examples/standalone-demo.html). It is a single-file HTML demo with sample content and no build step.
+If you want a no-install preview you can open directly in a browser, download [`examples/standalone-demo.html`](./examples/standalone-demo.html). It is a single self-contained file (React, dnd-kit and this package inlined — no network, no build step for the viewer) built from the real package via `npm run build:demo` (source in [`examples/standalone/main.tsx`](./examples/standalone/main.tsx)), so it shows the actual `DefaultEventCard` (move handle + delete icon) and `<Scheduler>` Shift behavior.
 
 The package ships a precompiled stylesheet at `draggable-scheduler/style.css`, which you should import once in your app if you want the grid to render with the bundled defaults.
 

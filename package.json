@@ -29,6 +29,7 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --sourcemap && node scripts/build-style.mjs",
+    "build:demo": "node scripts/build-standalone.mjs",
     "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
