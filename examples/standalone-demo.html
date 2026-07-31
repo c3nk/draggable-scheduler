@@ -473,14 +473,14 @@
 
       const initialPlacements = {
         'event-1': { weekday: 1, resourceId: 'room-a', start: 9 * 60 },
-        'event-2': { weekday: 1, resourceId: 'room-a', start: 9 * 60 },
+        'event-2': { weekday: 1, resourceId: 'room-a', start: 9 * 60 + 30 },
         'event-3': { weekday: 2, resourceId: 'room-b', start: 9 * 60 + 30 },
         'event-4': { weekday: 4, resourceId: 'room-b', start: 10 * 60 },
       };
 
       const events = [
         { id: 'event-1', title: 'Standup', duration: 60, owner: 'Alice' },
-        { id: 'event-2', title: 'Workshop', duration: 90, owner: 'Bob' },
+        { id: 'event-2', title: 'Workshop', duration: 30, owner: 'Bob' },
         { id: 'event-3', title: 'Check-in', duration: 30, owner: 'Cem' },
         { id: 'event-4', title: 'Design review', duration: 60, owner: 'Deniz' },
       ];
