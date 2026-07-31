@@ -404,6 +404,7 @@
             <div class="button-row">
               <button class="primary" id="resetBtn" type="button">Reset demo</button>
               <button class="secondary" id="clearBtn" type="button">Clear selection</button>
+              <button class="ghost" id="clearPlacementsBtn" type="button">Clear placements</button>
             </div>
           </div>
 
@@ -485,6 +486,7 @@
       const selectionTextEl = document.getElementById('selectionText');
       const resetBtn = document.getElementById('resetBtn');
       const clearBtn = document.getElementById('clearBtn');
+      const clearPlacementsBtn = document.getElementById('clearPlacementsBtn');
 
       function minuteLabel(minute) {
         const h = String(Math.floor(minute / 60)).padStart(2, '0');
@@ -802,6 +804,13 @@
 
       clearBtn.addEventListener('click', () => {
         state.selectedEventId = null;
+        render();
+      });
+
+      clearPlacementsBtn.addEventListener('click', () => {
+        state.placements = Object.fromEntries(events.map((event) => [event.id, null]));
+        state.selectedEventId = null;
+        state.draggedEventId = null;
         render();
       });
 
