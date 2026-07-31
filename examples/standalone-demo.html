@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>draggable-scheduler standalone demo</title>
+    <title>draggable-scheduler preview</title>
     <style>
       :root {
         color-scheme: light;
@@ -39,7 +39,7 @@
         padding: 24px clamp(18px, 2vw, 32px) 32px;
       }
 
-      .hero {
+      .header {
         display: flex;
         flex-wrap: wrap;
         align-items: end;
@@ -48,22 +48,22 @@
         margin-bottom: 20px;
       }
 
-      .hero h1 {
+      .header h1 {
         margin: 0;
         font-size: clamp(28px, 4vw, 48px);
         line-height: 1;
         letter-spacing: -0.04em;
       }
 
-      .hero p {
+      .header p {
         margin: 10px 0 0;
-        max-width: 740px;
+        max-width: 760px;
         color: var(--muted);
         font-size: 15px;
         line-height: 1.6;
       }
 
-      .badge {
+      .eyebrow {
         display: inline-flex;
         align-items: center;
         gap: 8px;
@@ -382,14 +382,14 @@
     <div class="shell">
       <div class="hero">
         <div>
-          <div class="badge">Single-file preview · no install required</div>
+          <div class="eyebrow">Single-file preview · no install required</div>
           <h1>draggable-scheduler demo</h1>
           <p>
             This page runs from one HTML file, uses no build step, and can be opened directly in a browser.
-            It shows a 2-room by 5-day grid, drag-and-drop from the palette, and drag-and-drop from the grid itself with stacked slot rendering.
+            It mirrors the open-source scheduler flow: drag from the palette, drag from the grid, use Shift for shared-slot placement, and convert shared slots to swaps inline.
           </p>
         </div>
-        <div class="badge">2 rooms × 5 days · open directly in Chrome, Edge, Firefox, Safari, or iOS Safari</div>
+        <div class="eyebrow">2 rooms × 5 days · Chrome, Edge, Firefox, Safari, iOS Safari</div>
       </div>
 
       <div class="layout">
@@ -429,7 +429,7 @@
           </div>
 
           <div class="footer">
-            Tip: this is a visual preview for the repo, not the production React build.
+            This is a static HTML preview of the open-source flow.
           </div>
         </aside>
 
@@ -438,9 +438,9 @@
             <div class="legend">
               <span><span class="dot"></span>Placed event</span>
               <span>•</span>
-              <span>Drop target slots highlight on hover</span>
+              <span>Shared slots expose convert-to-swap inline</span>
               <span>•</span>
-              <span>Uses static sample data</span>
+              <span>Static sample data</span>
             </div>
             <div id="grid" class="table" aria-label="Standalone scheduler preview"></div>
           </div>
