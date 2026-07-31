@@ -185,6 +185,18 @@ The grid supports roving focus and generic keyboard navigation:
 - `Delete` and `Backspace` request removal of the selected event
 
 Screen reader text is intentionally generic and domain-free. If you need custom wording, pass your own `a11yText` function.
+For the common case, the package also exports `createSchedulerA11yText(locale, overrides)` so you can start from the built-in generic copy and override only the phrases you need.
+
+```tsx
+import { createSchedulerA11yText } from 'draggable-scheduler'
+
+const a11yText = createSchedulerA11yText('tr', {
+  gridLabel: 'Planlama tablosu',
+  gridInstructions: 'Ok tuşları ile gezin. Enter ile yerleştirme iste.',
+})
+```
+
+Use the helper when you want generic screen-reader wording with a few app-specific tweaks, without rewriting the whole accessibility dictionary.
 
 ## Public API
 

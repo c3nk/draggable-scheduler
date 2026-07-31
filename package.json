@@ -1,6 +1,6 @@
 {
   "name": "draggable-scheduler",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A React grid component for weekly resource scheduling with drag-and-drop, built on dnd-kit.",
   "license": "Apache-2.0",
   "type": "module",

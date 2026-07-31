@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildSlotA11yLabel,
   buildSlotMatrix,
+  createSchedulerA11yText,
   resolveNextSlotId,
 } from '../src/keyboard'
 import { SchedulerTimeGrid } from '../src/SchedulerGrid'
@@ -61,6 +62,24 @@ describe('keyboard helpers', () => {
         occupied: true,
       }),
     ).toContain('occupied')
+  })
+
+  it('supports generic helper overrides for accessibility text', () => {
+    const a11yText = createSchedulerA11yText('tr', {
+      gridLabel: 'Planlama tablosu',
+      gridInstructions: 'Ok tuşları ile gezin.',
+    })
+
+    expect(a11yText('gridLabel')).toBe('Planlama tablosu')
+    expect(a11yText('gridInstructions')).toBe('Ok tuşları ile gezin.')
+    expect(
+      a11yText('slotLabel', {
+        dayLabel: 'Pzt',
+        resourceLabel: 'Oda A',
+        range: '09:00-09:30',
+        status: 'dolu',
+      }),
+    ).toContain('Hücre')
   })
 })
 

@@ -74,3 +74,5 @@ export type SchedulerA11yText = (
   key: SchedulerA11yKey,
   context?: Record<string, string | number | boolean | null | undefined>,
 ) => string
+
+export type SchedulerA11yDictionary = Partial<Record<SchedulerA11yKey, string>>

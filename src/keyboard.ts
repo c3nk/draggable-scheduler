@@ -1,4 +1,4 @@
-import type { SchedulerA11yKey, SchedulerA11yText, Slot } from './types'
+import type { SchedulerA11yDictionary, SchedulerA11yText, Slot } from './types'
 import type { SchedulerTimeGridColumn, SchedulerTimeGridRow } from './SchedulerGrid'
 
 export interface SlotMatrixPosition {
@@ -95,36 +95,68 @@ function formatTime(minuteOfDay: number): string {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
 }
 
-function defaultA11yText(key: SchedulerA11yKey, context?: Record<string, string | number | boolean | null | undefined>): string {
-  if (key === 'gridLabel') {
-    return 'Scheduler grid'
-  }
-  if (key === 'gridInstructions') {
-    return 'Use arrow keys to move between slots. Press Enter or Space to request placement. Press Escape to clear selection.'
-  }
-  if (key === 'slotAvailable') return 'available'
-  if (key === 'slotOccupied') return 'occupied'
-  if (key === 'slotWarning') return 'warning'
-  if (key === 'slotConflict') return 'conflict'
-  if (key === 'selectionRequired') return 'Select an event first.'
-  if (key === 'selectionCleared') return 'Selection cleared.'
-  if (key === 'placementRequested') return 'Placement requested.'
-  if (key === 'removeRequested') return 'Removal requested.'
-  if (key === 'focusMoved') return 'Focus moved.'
+const DEFAULT_A11Y_DICTIONARIES: Record<'en' | 'tr', SchedulerA11yDictionary> = {
+  en: {
+    gridLabel: 'Scheduler grid',
+    gridInstructions: 'Use arrow keys to move between slots. Press Enter or Space to request placement. Press Escape to clear selection.',
+    slotAvailable: 'available',
+    slotOccupied: 'occupied',
+    slotWarning: 'warning',
+    slotConflict: 'conflict',
+    selectionRequired: 'Select an event first.',
+    selectionCleared: 'Selection cleared.',
+    placementRequested: 'Placement requested.',
+    removeRequested: 'Removal requested.',
+    focusMoved: 'Focus moved.',
+  },
+  tr: {
+    gridLabel: 'Zamanlama tablosu',
+    gridInstructions: 'Slotlar arasında gezinmek için ok tuşlarını kullanın. Yerleştirme istemek için Enter veya Space tuşuna basın. Seçimi temizlemek için Escape tuşuna basın.',
+    slotAvailable: 'boş',
+    slotOccupied: 'dolu',
+    slotWarning: 'uyarı',
+    slotConflict: 'çakışma',
+    selectionRequired: 'Önce bir öğe seçin.',
+    selectionCleared: 'Seçim temizlendi.',
+    placementRequested: 'Yerleştirme istendi.',
+    removeRequested: 'Kaldırma istendi.',
+    focusMoved: 'Odak taşındı.',
+  },
+}
 
-  if (key === 'slotLabel') {
-    const parts = [
-      'Slot',
-      context?.dayLabel ? String(context.dayLabel) : null,
-      context?.resourceLabel ? String(context.resourceLabel) : null,
-      context?.range ? String(context.range) : null,
-      context?.status ? String(context.status) : null,
-      context?.selected ? 'selected' : null,
-    ].filter(Boolean)
-    return parts.join(', ')
-  }
+function getDefaultA11yDictionary(locale: 'en' | 'tr'): SchedulerA11yDictionary {
+  return DEFAULT_A11Y_DICTIONARIES[locale]
+}
 
-  return 'slot'
+function createA11yTextFromDictionary(dictionary: SchedulerA11yDictionary, slotLabelPrefix: string): SchedulerA11yText {
+  return (key, context) => {
+    if (key === 'slotLabel') {
+      const parts = [
+        slotLabelPrefix,
+        context?.dayLabel ? String(context.dayLabel) : null,
+        context?.resourceLabel ? String(context.resourceLabel) : null,
+        context?.range ? String(context.range) : null,
+        context?.status ? String(context.status) : null,
+        context?.selected ? 'selected' : null,
+      ].filter(Boolean)
+      return parts.join(', ')
+    }
+    return dictionary[key] ?? 'slot'
+  }
+}
+
+export function createSchedulerA11yText(
+  locale: 'en' | 'tr',
+  overrides: SchedulerA11yDictionary = {},
+): SchedulerA11yText {
+  const slotLabelPrefix = locale === 'tr' ? 'Hücre' : 'Slot'
+  return createA11yTextFromDictionary(
+    {
+      ...getDefaultA11yDictionary(locale),
+      ...overrides,
+    },
+    slotLabelPrefix,
+  )
 }
 
 export function buildSlotA11yLabel(input: {
@@ -134,7 +166,7 @@ export function buildSlotA11yLabel(input: {
   occupied: boolean
   a11yText?: SchedulerA11yText
 }): string {
-  const a11yText = input.a11yText ?? defaultA11yText
+  const a11yText = input.a11yText ?? createSchedulerA11yText('en')
   const statusText = input.occupied
     ? a11yText('slotOccupied')
     : input.status === 'warning'
@@ -153,5 +185,5 @@ export function buildSlotA11yLabel(input: {
 }
 
 export function getDefaultA11yText(): SchedulerA11yText {
-  return defaultA11yText
+  return createSchedulerA11yText('en')
 }

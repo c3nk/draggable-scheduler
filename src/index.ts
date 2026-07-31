@@ -7,6 +7,7 @@ export type {
   DragEventData,
   SlotStatus,
   SchedulerA11yKey,
+  SchedulerA11yDictionary,
   SchedulerA11yText,
 } from './types'
 
@@ -37,6 +38,11 @@ export {
 export {
   PresetToolbar,
 } from './PresetToolbar'
+
+export {
+  createSchedulerA11yText,
+  getDefaultA11yText,
+} from './keyboard'
 
 export type {
   SchedulerTimeGridColumn,

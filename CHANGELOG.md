@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.2 - 2026-07-31
+
+Generic accessibility text helper release.
+
+### Added
+
+- `createSchedulerA11yText(locale, overrides)` for locale-aware generic screen reader copy with optional overrides.
+- Exported `SchedulerA11yDictionary` and the new accessibility helper from the package entrypoint.
+- Keyboard accessibility docs showing how to customize generic a11y wording without rewriting the whole dictionary.
+
+### Changed
+
+- Bumped package version to `0.1.2` for the new public API surface.
+
 ## 0.1.1 - 2026-07-29
 
 Patch release for npm republish.
