@@ -52,6 +52,7 @@ export {
 export {
   createSchedulerA11yText,
   getDefaultA11yText,
+  formatTimeOfDay,
 } from './keyboard'
 
 export type {

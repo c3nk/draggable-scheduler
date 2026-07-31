@@ -29,6 +29,8 @@ export interface DefaultEventCardProps<TEvent extends SchedulerEvent<unknown>> {
   selected?: boolean
   /** Wire dnd-kit's useDraggable so the card is draggable on its own. Default: true. */
   draggable?: boolean
+  /** What starts a drag: the whole card ('card', default) or only the grip handle ('handle'). */
+  dragActivator?: 'card' | 'handle'
   tx?: Tx
   /** Override the auto-formatted duration badge text. */
   durationLabel?: string
@@ -94,20 +96,27 @@ function CardChrome<TEvent extends SchedulerEvent<unknown>>({
   renderRemoveIcon,
   children,
   className,
+  dragActivator,
   dragHandleProps,
+  rootDragProps,
   cardRef,
   cardStyle,
   dragging,
 }: DefaultEventCardProps<TEvent> & {
   dragHandleProps?: Record<string, unknown>
+  rootDragProps?: Record<string, unknown>
   cardRef?: (node: HTMLElement | null) => void
   cardStyle?: CSSProperties
   dragging?: boolean
 }) {
   const resolvedTx = tx ?? defaultTx
   const duration = durationLabel ?? formatDurationLabel(event.durationMinutes, resolvedTx)
-  const showHandle = draggable !== false && showDragHandle !== false
+  const isDraggable = draggable !== false
+  const showHandle = isDraggable && showDragHandle !== false
   const showRemoveButton = showRemove !== false && typeof onRemove === 'function'
+  // By default the whole card is the drag activator (matching a typical card UX);
+  // set dragActivator="handle" to require grabbing the grip.
+  const grabWholeCard = isDraggable && dragActivator !== 'handle'
   return (
     <div
       ref={cardRef}
@@ -115,18 +124,20 @@ function CardChrome<TEvent extends SchedulerEvent<unknown>>({
       className={[
         'scheduler-event-card rounded-lg border p-2 shadow-sm transition',
         selected ? 'border-blue-500 bg-blue-50 text-blue-900' : 'border-slate-200 bg-white text-slate-800',
+        grabWholeCard ? 'cursor-grab' : '',
         dragging ? 'opacity-60' : '',
         className ?? '',
       ].join(' ')}
+      {...(grabWholeCard ? (rootDragProps ?? {}) : {})}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-1.5">
           {showHandle ? (
             <span
-              className="scheduler-drag-handle cursor-grab text-slate-400 hover:text-slate-600"
+              className={`scheduler-drag-handle text-slate-400 hover:text-slate-600 ${grabWholeCard ? '' : 'cursor-grab'}`}
               aria-label={resolvedTx('Taşı', 'Move')}
               title={resolvedTx('Sürükleyerek taşı', 'Drag to move')}
-              {...(dragHandleProps ?? {})}
+              {...(grabWholeCard ? {} : (dragHandleProps ?? {}))}
             >
               {renderDragHandle ? renderDragHandle() : <DragHandleIcon />}
             </span>
@@ -166,15 +177,17 @@ function DraggableCard<TEvent extends SchedulerEvent<unknown>>(props: DefaultEve
   const cardStyle: CSSProperties = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
   }
-  // The drag handle is the activator; the whole card moves with the transform.
-  const dragHandleProps = { ...attributes, ...listeners }
+  // Same activator props either way; CardChrome decides whether they land on the
+  // card root (whole-card drag, default) or on the grip handle.
+  const dragProps = { ...attributes, ...listeners }
   return (
     <CardChrome
       {...props}
       cardRef={setNodeRef}
       cardStyle={cardStyle}
       dragging={isDragging}
-      dragHandleProps={dragHandleProps}
+      rootDragProps={dragProps}
+      dragHandleProps={dragProps}
     />
   )
 }

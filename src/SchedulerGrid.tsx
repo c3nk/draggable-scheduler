@@ -63,7 +63,6 @@ export function buildSlots<TData = unknown>(input: {
   config: SchedulerConfig
   resources: Resource<TData>[]
   locale: 'tr' | 'en'
-  timeFormat: '12h' | '24h'
 }): Slot[] {
   const result: Slot[] = []
   for (const day of ALL_WEEK_DAYS) {
@@ -461,10 +460,12 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
   onRequireEventSelection,
   onAttemptPlaceEvent,
   a11yText,
+  timeFormat = '24h',
 }: {
   tx: (tr: string, en: string) => string
   visibleColumns: SchedulerTimeGridColumn[]
   timeRows: SchedulerTimeGridRow[]
+  timeFormat?: '12h' | '24h'
   slotByGrid: Map<string, Slot>
   startEventBySlot: Map<string, TEvent[]>
   occupyingEventBySlot: Map<string, TEvent[]>
@@ -628,6 +629,7 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
                       status: feedback.status,
                       selected: isFocused,
                       occupied: startEvents.length > 0 || occupyingEvents.length > 0,
+                      timeFormat,
                       a11yText: resolvedA11yText,
                     })}
                     ariaSelected={isFocused}
@@ -646,6 +648,7 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
                           status: feedback.status,
                           selected: true,
                           occupied: startEvents.length > 0 || occupyingEvents.length > 0,
+                          timeFormat,
                           a11yText: resolvedA11yText,
                         }))
                       }

@@ -56,6 +56,7 @@ import {
   type SchedulerTimeGridColumn,
   type SchedulerTimeGridRow,
 } from './SchedulerGrid'
+import { formatTimeOfDay } from './keyboard'
 
 /** The slot a drag/click resolved to, in both id and coordinate form. */
 export interface DropTarget {
@@ -84,12 +85,6 @@ export const schedulerCollisionDetection: CollisionDetection = (args) => {
   const rectCollisions = rectIntersection(args)
   if (rectCollisions.length > 0) return rectCollisions
   return closestCenter(args)
-}
-
-function formatMinuteRange(startMinute: number, endMinute: number): string {
-  const format = (minute: number) =>
-    `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`
-  return `${format(startMinute)}-${format(endMinute)}`
 }
 
 export interface SchedulerProps<TEvent extends SchedulerEvent<unknown>> {
@@ -142,7 +137,12 @@ export function Scheduler<TEvent extends SchedulerEvent<unknown>>({
   renderEventCard,
   renderOccupyingEvent,
 }: SchedulerProps<TEvent>) {
-  const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor))
+  // A small activation distance so a plain click selects (and the remove button
+  // works) instead of being swallowed as the start of a drag.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor),
+  )
   const [isShiftPressed, setIsShiftPressed] = useState(false)
 
   useEffect(() => {
@@ -156,8 +156,8 @@ export function Scheduler<TEvent extends SchedulerEvent<unknown>>({
   }, [])
 
   const slots = useMemo(
-    () => buildSlots({ config, resources, locale, timeFormat }),
-    [config, resources, locale, timeFormat],
+    () => buildSlots({ config, resources, locale }),
+    [config, resources, locale],
   )
   const slotById = useMemo(() => new Map(slots.map((slot) => [slot.id, slot] as const)), [slots])
   const slotByGrid = useMemo(
@@ -192,10 +192,14 @@ export function Scheduler<TEvent extends SchedulerEvent<unknown>>({
     const rows: SchedulerTimeGridRow[] = []
     for (let minute = config.workStartMinute; minute < config.workEndMinute; minute += config.slotStepMinutes) {
       const endMinute = minute + config.slotStepMinutes
-      rows.push({ startMinute: minute, endMinute, label: formatMinuteRange(minute, endMinute) })
+      rows.push({
+        startMinute: minute,
+        endMinute,
+        label: `${formatTimeOfDay(minute, timeFormat)}-${formatTimeOfDay(endMinute, timeFormat)}`,
+      })
     }
     return rows
-  }, [config.slotStepMinutes, config.workEndMinute, config.workStartMinute])
+  }, [config.slotStepMinutes, config.workEndMinute, config.workStartMinute, timeFormat])
 
   const resolvedSavedPlacements = savedPlacements ?? placements
 
@@ -227,6 +231,7 @@ export function Scheduler<TEvent extends SchedulerEvent<unknown>>({
       <SchedulerTimeGrid<TEvent>
         tx={tx}
         a11yText={a11yText}
+        timeFormat={timeFormat}
         visibleColumns={visibleColumns}
         timeRows={timeRows}
         slotByGrid={slotByGrid}
