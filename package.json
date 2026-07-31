@@ -20,6 +20,13 @@
     "dist"
   ],
   "sideEffects": false,
+  "browserslist": [
+    "last 2 Chrome versions",
+    "last 2 Edge versions",
+    "last 2 Firefox versions",
+    "last 2 Safari versions",
+    "last 2 iOS Safari versions"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --sourcemap && node scripts/build-style.mjs",
     "dev": "tsup src/index.ts --format esm,cjs --dts --watch",

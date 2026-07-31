@@ -160,6 +160,12 @@ A fuller worked example lives in [`examples/basic/BasicSchedulerExample.tsx`](./
 
 The package ships a precompiled stylesheet at `draggable-scheduler/style.css`, which you should import once in your app if you want the grid to render with the bundled defaults.
 
+## Browser Support
+
+`draggable-scheduler` is supported on the latest two stable versions of Chrome, Edge, Firefox, Safari, and iOS Safari.
+
+The published package targets these browsers in `package.json` via `browserslist`, and the support matrix is covered by tests so it does not drift accidentally.
+
 ## Public API
 
 ```
