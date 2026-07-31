@@ -162,6 +162,11 @@
         box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
       }
 
+      .event-card.placed {
+        border-color: rgba(5, 150, 105, 0.22);
+        background: linear-gradient(180deg, #ffffff, #f0fdf4);
+      }
+
       .event-card[draggable="true"] {
         cursor: grab;
       }
@@ -180,6 +185,22 @@
         font-size: 12px;
         color: var(--muted);
         line-height: 1.45;
+      }
+
+      .event-pill {
+        display: inline-flex;
+        align-items: center;
+        margin-top: 8px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.06);
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .event-pill.placed {
+        background: rgba(5, 150, 105, 0.12);
+        color: var(--success);
       }
 
       .grid-panel {
@@ -332,9 +353,9 @@
 
       <div class="layout">
         <aside class="panel sidebar">
-          <h2>Events</h2>
+          <h2>Draggable events</h2>
           <div class="hint">
-            Cards on the left are draggable. If you prefer, click one card and then click a grid cell to move it.
+            Cards on the left are draggable at all times. If you prefer, click one card and then click a grid cell to move it.
           </div>
 
           <div class="section">
@@ -351,7 +372,7 @@
           </div>
 
           <div class="section">
-            <h3>Unplaced events</h3>
+            <h3>Event palette</h3>
             <div class="event-list" id="eventList"></div>
           </div>
 
@@ -467,8 +488,8 @@
         return entry ? getEventById(entry[0]) : null;
       }
 
-      function getUnplacedEvents() {
-        return events.filter((event) => !state.placements[event.id]);
+      function getPlacementForEvent(eventId) {
+        return state.placements[eventId] || null;
       }
 
       function renderSelection() {
@@ -480,24 +501,19 @@
       function renderEvents() {
         eventListEl.innerHTML = '';
 
-        const unplaced = getUnplacedEvents();
-        if (!unplaced.length) {
-          const empty = document.createElement('div');
-          empty.className = 'hint';
-          empty.textContent = 'All events are placed.';
-          eventListEl.appendChild(empty);
-          return;
-        }
-
-        for (const event of unplaced) {
+        for (const event of events) {
+          const placement = getPlacementForEvent(event.id);
           const card = document.createElement('div');
-          card.className = 'event-card';
+          card.className = `event-card${placement ? ' placed' : ''}`;
           card.draggable = true;
           card.tabIndex = 0;
           card.dataset.eventId = event.id;
           card.innerHTML = `
             <div class="event-title">${event.title}</div>
             <div class="event-meta">Owner: ${event.owner}<br />Duration: ${event.duration} minutes</div>
+            <div class="event-pill ${placement ? 'placed' : ''}">
+              ${placement ? `Placed: ${minuteLabel(placement.start)} · ${resources.find((resource) => resource.id === placement.resourceId)?.label || placement.resourceId}` : 'Drag me to the grid'}
+            </div>
           `;
 
           if (state.selectedEventId === event.id) {
@@ -529,6 +545,19 @@
             card.classList.remove('dragging');
           });
 
+          const removeButton = document.createElement('button');
+          removeButton.type = 'button';
+          removeButton.className = 'ghost';
+          removeButton.style.marginTop = '10px';
+          removeButton.textContent = placement ? 'Remove from grid' : 'No placement yet';
+          removeButton.disabled = !placement;
+          removeButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!placement) return;
+            removeEventFromPlacement(event.id);
+          });
+
+          card.appendChild(removeButton);
           eventListEl.appendChild(card);
         }
       }
