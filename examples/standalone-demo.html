@@ -307,6 +307,31 @@
 
       .slot .occupied-card {
         cursor: grab;
+        user-select: none;
+      }
+
+      .slot-stack {
+        display: grid;
+        gap: 6px;
+        margin-top: 6px;
+      }
+
+      .slot-stack.shared {
+        margin-top: 4px;
+      }
+
+      .slot-shared-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        width: fit-content;
+        border-radius: 999px;
+        padding: 3px 7px;
+        background: rgba(251, 191, 36, 0.18);
+        border: 1px solid rgba(245, 158, 11, 0.28);
+        color: #92400e;
+        font-size: 10px;
+        font-weight: 700;
       }
 
       .slot .occupied-card.dragging {
@@ -359,7 +384,7 @@
           <h1>draggable-scheduler demo</h1>
           <p>
             This page runs from one HTML file, uses no build step, and can be opened directly in a browser.
-            It shows a 3-room by 5-day grid, drag-and-drop from the palette, and drag-and-drop from the grid itself.
+            It shows a 3-room by 5-day grid, drag-and-drop from the palette, and drag-and-drop from the grid itself with stacked slot rendering.
           </p>
         </div>
         <div class="badge">3 rooms × 5 days · open directly in Chrome, Edge, Firefox, Safari, or iOS Safari</div>
@@ -369,7 +394,7 @@
         <aside class="panel sidebar">
           <h2>Draggable events</h2>
           <div class="hint">
-            Cards on the left are draggable at all times. Placed cards inside the grid are draggable too, so you can move them without returning to the palette.
+            Cards on the left are draggable at all times. Placed cards inside the grid are draggable too, and shared slots stack just like the main app.
           </div>
 
           <div class="section">
@@ -436,14 +461,16 @@
 
       const initialPlacements = {
         'event-1': { weekday: 1, resourceId: 'room-a', start: 9 * 60 },
-        'event-2': { weekday: 2, resourceId: 'room-b', start: 9 * 60 + 30 },
-        'event-3': { weekday: 4, resourceId: 'room-c', start: 10 * 60 },
+        'event-2': { weekday: 1, resourceId: 'room-a', start: 9 * 60 },
+        'event-3': { weekday: 2, resourceId: 'room-b', start: 9 * 60 + 30 },
+        'event-4': { weekday: 4, resourceId: 'room-c', start: 10 * 60 },
       };
 
       const events = [
         { id: 'event-1', title: 'Standup', duration: 60, owner: 'Alice' },
         { id: 'event-2', title: 'Workshop', duration: 90, owner: 'Bob' },
         { id: 'event-3', title: 'Check-in', duration: 30, owner: 'Cem' },
+        { id: 'event-4', title: 'Design review', duration: 60, owner: 'Deniz' },
       ];
 
       const state = {
@@ -491,15 +518,23 @@
 
       const slots = buildSlots();
 
-      function getEventById(eventId) {
-        return events.find((event) => event.id === eventId) || null;
+      function getStartEventsBySlot(weekday, resourceId, start) {
+        return events
+          .map((event) => ({ event, placement: state.placements[event.id] }))
+          .filter(({ placement }) => placement && placement.weekday === weekday && placement.resourceId === resourceId && placement.start === start)
+          .map(({ event }) => event);
       }
 
-      function getPlacementBySlot(weekday, resourceId, start) {
-        const entry = Object.entries(state.placements).find(([, placement]) =>
-          placement && placement.weekday === weekday && placement.resourceId === resourceId && placement.start === start
-        );
-        return entry ? getEventById(entry[0]) : null;
+      function getOccupyingEventsBySlot(weekday, resourceId, start) {
+        return events
+          .map((event) => ({ event, placement: state.placements[event.id] }))
+          .filter(({ event, placement }) => {
+            if (!placement) return false;
+            if (placement.weekday !== weekday || placement.resourceId !== resourceId) return false;
+            if (placement.start === start) return false;
+            return placement.start < start && placement.start + event.duration > start;
+          })
+          .map(({ event }) => event);
       }
 
       function getPlacementForEvent(eventId) {
@@ -616,41 +651,70 @@
               slot.tabIndex = 0;
               slot.setAttribute(
                 'aria-label',
-                `${day.label}, ${resource.label}, ${row.label}${getPlacementBySlot(day.weekday, resource.id, row.start) ? ', occupied' : ', available'}`
+                `${day.label}, ${resource.label}, ${row.label}${getStartEventsBySlot(day.weekday, resource.id, row.start).length > 0 || getOccupyingEventsBySlot(day.weekday, resource.id, row.start).length > 0 ? ', occupied' : ', available'}`
               );
 
-              const event = getPlacementBySlot(day.weekday, resource.id, row.start);
               slot.innerHTML = `<div class="slot-label">${day.label} · ${resource.label}</div>`;
 
-              if (event) {
-                const card = document.createElement('div');
-                card.className = 'occupied occupied-card';
-                card.draggable = true;
-                card.dataset.eventId = event.id;
-                card.innerHTML = `
-                  <strong>${event.title}</strong>
-                  ${event.owner}
-                `;
+              const startEvents = getStartEventsBySlot(day.weekday, resource.id, row.start)
+              const occupyingEvents = getOccupyingEventsBySlot(day.weekday, resource.id, row.start)
 
-                card.addEventListener('click', (e) => {
-                  e.stopPropagation();
-                  state.selectedEventId = event.id;
-                  render();
-                });
+              if (startEvents.length > 0 || occupyingEvents.length > 0) {
+                const stack = document.createElement('div');
+                stack.className = `slot-stack${startEvents.length > 1 ? ' shared' : ''}`;
 
-                card.addEventListener('dragstart', (e) => {
-                  state.draggedEventId = event.id;
-                  card.classList.add('dragging');
-                  e.dataTransfer.effectAllowed = 'move';
-                  e.dataTransfer.setData('text/plain', event.id);
-                });
+                if (startEvents.length > 1) {
+                  const badge = document.createElement('div');
+                  badge.className = 'slot-shared-badge';
+                  badge.textContent = `Shared slot (${startEvents.length})`;
+                  stack.appendChild(badge);
+                }
 
-                card.addEventListener('dragend', () => {
-                  state.draggedEventId = null;
-                  card.classList.remove('dragging');
-                });
+                for (const event of startEvents) {
+                  const card = document.createElement('div');
+                  card.className = 'occupied occupied-card';
+                  card.draggable = true;
+                  card.dataset.eventId = event.id;
+                  card.innerHTML = `
+                    <strong>${event.title}</strong>
+                    ${event.owner}
+                  `;
 
-                slot.appendChild(card);
+                  card.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    state.selectedEventId = event.id;
+                    render();
+                  });
+
+                  card.addEventListener('dragstart', (e) => {
+                    state.draggedEventId = event.id;
+                    card.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', event.id);
+                  });
+
+                  card.addEventListener('dragend', () => {
+                    state.draggedEventId = null;
+                    card.classList.remove('dragging');
+                  });
+
+                  stack.appendChild(card);
+                }
+
+                for (const event of occupyingEvents) {
+                  const continueChip = document.createElement('div');
+                  continueChip.className = 'occupied';
+                  continueChip.style.background = 'linear-gradient(180deg, #e2e8f0, #cbd5e1)';
+                  continueChip.style.color = '#0f172a';
+                  continueChip.style.boxShadow = 'none';
+                  continueChip.innerHTML = `
+                    <strong>${event.title}</strong>
+                    ${event.owner} continues
+                  `;
+                  stack.appendChild(continueChip);
+                }
+
+                slot.appendChild(stack);
               }
 
               slot.addEventListener('dragover', (e) => {
