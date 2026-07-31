@@ -237,7 +237,7 @@
 
       .table {
         display: grid;
-        grid-template-columns: 112px repeat(15, minmax(92px, 1fr));
+        grid-template-columns: 112px repeat(10, minmax(92px, 1fr));
         gap: 10px;
       }
 
@@ -278,6 +278,8 @@
         min-height: 64px;
         padding: 8px;
         text-align: center;
+        color: #334155;
+        line-height: 1.2;
       }
 
       .slot {
@@ -394,7 +396,7 @@
         <aside class="panel sidebar">
           <h2>Draggable events</h2>
           <div class="hint">
-            Cards on the left are draggable at all times. Placed cards inside the grid are draggable too, and shared slots stack just like the main app.
+            Cards on the left are draggable at all times. Placed cards inside the grid are draggable too, shared slots stack, and the time axis stays visible.
           </div>
 
           <div class="section">

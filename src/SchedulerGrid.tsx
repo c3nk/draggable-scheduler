@@ -568,8 +568,8 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
           {timeRows.map((row) => (
             <Fragment key={row.startMinute}>
               <div className="sticky left-0 z-10 rounded border border-slate-200 bg-white px-2 py-1 text-xs font-semibold">
-                <div className="flex min-h-[110px] items-center justify-center">
-                  <span style={{ writingMode: 'vertical-lr' }}>{row.label}</span>
+                <div className="flex min-h-[110px] items-center justify-center text-center leading-tight text-slate-700">
+                  <span>{row.label}</span>
                 </div>
               </div>
               {visibleColumns.map((column) => {
