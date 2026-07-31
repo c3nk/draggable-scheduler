@@ -405,6 +405,7 @@
               <button class="primary" id="resetBtn" type="button">Reset demo</button>
               <button class="secondary" id="clearBtn" type="button">Clear selection</button>
               <button class="ghost" id="clearPlacementsBtn" type="button">Clear placements</button>
+              <button class="ghost" id="swapBtn" type="button">Swap placements</button>
             </div>
           </div>
 
@@ -487,6 +488,7 @@
       const resetBtn = document.getElementById('resetBtn');
       const clearBtn = document.getElementById('clearBtn');
       const clearPlacementsBtn = document.getElementById('clearPlacementsBtn');
+      const swapBtn = document.getElementById('swapBtn');
 
       function minuteLabel(minute) {
         const h = String(Math.floor(minute / 60)).padStart(2, '0');
@@ -622,6 +624,22 @@
 
       function removeEventFromPlacement(eventId) {
         state.placements[eventId] = null;
+        render();
+      }
+
+      function getPlacedEventIds() {
+        return events
+          .map((event) => event.id)
+          .filter((eventId) => state.placements[eventId]);
+      }
+
+      function swapPlacements(leftEventId, rightEventId) {
+        if (!leftEventId || !rightEventId || leftEventId === rightEventId) return;
+        const leftPlacement = state.placements[leftEventId];
+        const rightPlacement = state.placements[rightEventId];
+        state.placements[leftEventId] = rightPlacement ? { ...rightPlacement } : null;
+        state.placements[rightEventId] = leftPlacement ? { ...leftPlacement } : null;
+        state.selectedEventId = rightEventId;
         render();
       }
 
@@ -793,6 +811,7 @@
         renderSelection();
         renderEvents();
         renderGrid();
+        swapBtn.disabled = getPlacedEventIds().length < 2;
       }
 
       resetBtn.addEventListener('click', () => {
@@ -812,6 +831,19 @@
         state.selectedEventId = null;
         state.draggedEventId = null;
         render();
+      });
+
+      swapBtn.addEventListener('click', () => {
+        const placedEventIds = getPlacedEventIds();
+        if (placedEventIds.length < 2) return;
+
+        const selectedIndex = state.selectedEventId ? placedEventIds.indexOf(state.selectedEventId) : -1;
+        const leftEventId = selectedIndex >= 0 ? placedEventIds[selectedIndex] : placedEventIds[0];
+        const rightEventId = selectedIndex >= 0
+          ? placedEventIds[(selectedIndex + 1) % placedEventIds.length]
+          : placedEventIds[1];
+
+        swapPlacements(leftEventId, rightEventId);
       });
 
       render();
