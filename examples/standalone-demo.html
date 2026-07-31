@@ -34,9 +34,9 @@
       }
 
       .shell {
-        max-width: 1440px;
+        width: min(100%, 1840px);
         margin: 0 auto;
-        padding: 28px;
+        padding: 24px clamp(18px, 2vw, 32px) 32px;
       }
 
       .hero {
@@ -78,7 +78,7 @@
 
       .layout {
         display: grid;
-        grid-template-columns: 320px minmax(0, 1fr);
+        grid-template-columns: 360px minmax(0, 1fr);
         gap: 20px;
         align-items: start;
       }
@@ -209,7 +209,8 @@
       }
 
       .schedule {
-        min-width: 1080px;
+        width: 100%;
+        min-width: 0;
       }
 
       .legend {
@@ -236,8 +237,8 @@
 
       .table {
         display: grid;
-        grid-template-columns: 96px repeat(15, minmax(72px, 1fr));
-        gap: 8px;
+        grid-template-columns: 112px repeat(15, minmax(92px, 1fr));
+        gap: 10px;
       }
 
       .corner,
@@ -280,7 +281,7 @@
       }
 
       .slot {
-        min-height: 64px;
+        min-height: 78px;
         padding: 8px;
         border: 1px dashed rgba(37, 99, 235, 0.18);
         background: rgba(255, 255, 255, 0.72);
@@ -295,8 +296,21 @@
       }
 
       .slot-label {
-        font-size: 11px;
+        font-size: 10px;
         color: var(--muted);
+        line-height: 1.2;
+      }
+
+      .slot .occupied {
+        margin-top: 6px;
+      }
+
+      .slot .occupied-card {
+        cursor: grab;
+      }
+
+      .slot .occupied-card.dragging {
+        opacity: 0.4;
       }
 
       .occupied {
@@ -344,18 +358,18 @@
           <div class="badge">Single-file preview · no install required</div>
           <h1>draggable-scheduler demo</h1>
           <p>
-            This page is intentionally simple: it runs from one HTML file, uses no build step, and can be opened
-            directly in a browser. Drag an event card onto a slot, or select a card and click a slot to place it.
+            This page runs from one HTML file, uses no build step, and can be opened directly in a browser.
+            It shows a 3-room by 5-day grid, drag-and-drop from the palette, and drag-and-drop from the grid itself.
           </p>
         </div>
-        <div class="badge">Open this file directly in Chrome, Edge, Firefox, Safari, or iOS Safari</div>
+        <div class="badge">3 rooms × 5 days · open directly in Chrome, Edge, Firefox, Safari, or iOS Safari</div>
       </div>
 
       <div class="layout">
         <aside class="panel sidebar">
           <h2>Draggable events</h2>
           <div class="hint">
-            Cards on the left are draggable at all times. If you prefer, click one card and then click a grid cell to move it.
+            Cards on the left are draggable at all times. Placed cards inside the grid are draggable too, so you can move them without returning to the palette.
           </div>
 
           <div class="section">
@@ -606,10 +620,38 @@
               );
 
               const event = getPlacementBySlot(day.weekday, resource.id, row.start);
-              slot.innerHTML = `
-                <div class="slot-label">${day.label} · ${resource.label}</div>
-                ${event ? `<div class="occupied"><strong>${event.title}</strong>${event.owner}</div>` : ''}
-              `;
+              slot.innerHTML = `<div class="slot-label">${day.label} · ${resource.label}</div>`;
+
+              if (event) {
+                const card = document.createElement('div');
+                card.className = 'occupied occupied-card';
+                card.draggable = true;
+                card.dataset.eventId = event.id;
+                card.innerHTML = `
+                  <strong>${event.title}</strong>
+                  ${event.owner}
+                `;
+
+                card.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  state.selectedEventId = event.id;
+                  render();
+                });
+
+                card.addEventListener('dragstart', (e) => {
+                  state.draggedEventId = event.id;
+                  card.classList.add('dragging');
+                  e.dataTransfer.effectAllowed = 'move';
+                  e.dataTransfer.setData('text/plain', event.id);
+                });
+
+                card.addEventListener('dragend', () => {
+                  state.draggedEventId = null;
+                  card.classList.remove('dragging');
+                });
+
+                slot.appendChild(card);
+              }
 
               slot.addEventListener('dragover', (e) => {
                 e.preventDefault();
@@ -634,7 +676,9 @@
               });
 
               slot.addEventListener('click', () => {
-                if (!state.selectedEventId) return;
+                if (!state.selectedEventId) {
+                  return;
+                }
                 placeEvent(state.selectedEventId, {
                   weekday: day.weekday,
                   resourceId: resource.id,
