@@ -121,6 +121,7 @@ export interface SchedulerProps<TEvent extends SchedulerEvent<unknown>> {
 
   renderEventCard?: (event: TEvent, context: RenderEventCardContext) => ReactNode
   renderOccupyingEvent?: (event: TEvent) => ReactNode
+  renderRowLabel?: (row: SchedulerTimeGridRow) => ReactNode
 }
 
 export function Scheduler<TEvent extends SchedulerEvent<unknown>>({
@@ -144,6 +145,7 @@ export function Scheduler<TEvent extends SchedulerEvent<unknown>>({
   showEmptyPlacementNotice = false,
   renderEventCard,
   renderOccupyingEvent,
+  renderRowLabel,
 }: SchedulerProps<TEvent>) {
   // A small activation distance so a plain click selects (and the remove button
   // works) instead of being swallowed as the start of a drag.
@@ -261,6 +263,7 @@ export function Scheduler<TEvent extends SchedulerEvent<unknown>>({
         showEmptyPlacementNotice={showEmptyPlacementNotice}
         renderEventCard={renderEventCard}
         renderOccupyingEvent={renderOccupyingEvent}
+        renderRowLabel={renderRowLabel}
         onSelectEvent={(eventId) => onSelectEvent?.(eventId)}
         onRemoveEvent={(eventId) => onEventRemove?.(eventId)}
         onConvertSharedSlotToSwap={(eventIds) => onConvertSharedSlotToSwap?.(eventIds)}

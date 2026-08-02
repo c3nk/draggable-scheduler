@@ -454,6 +454,7 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
   showEmptyPlacementNotice,
   renderEventCard,
   renderOccupyingEvent,
+  renderRowLabel,
   onSelectEvent,
   onRemoveEvent,
   onConvertSharedSlotToSwap,
@@ -477,6 +478,7 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
   showEmptyPlacementNotice: boolean
   renderEventCard?: (event: TEvent, context: RenderEventCardContext) => ReactNode
   renderOccupyingEvent?: (event: TEvent) => ReactNode
+  renderRowLabel?: (row: SchedulerTimeGridRow) => ReactNode
   onSelectEvent: (eventId: string | null) => void
   onRemoveEvent: (eventId: string) => void
   onConvertSharedSlotToSwap: (slotEventIds: string[]) => void
@@ -592,7 +594,7 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
             <Fragment key={row.startMinute}>
               <div className="sticky left-0 z-10 rounded border border-slate-200 bg-white px-2 py-1 text-xs font-semibold">
                 <div className="flex min-h-[110px] items-center justify-center text-center leading-tight text-slate-700">
-                  <span>{row.label}</span>
+                  {renderRowLabel ? renderRowLabel(row) : <span>{row.label}</span>}
                 </div>
               </div>
               {visibleColumns.map((column) => {
