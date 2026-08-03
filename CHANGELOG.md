@@ -24,6 +24,7 @@ Generic API cleanup + batteries-included UI. **Breaking** — grid prop names mo
 
 ### Fixed
 
+- `browserslist` used an invalid query `last 2 iOS Safari versions` (the canonical browserslist name is `iOS`), which broke any consumer whose autoprefixer processed the bundled `dist/style.css` ("Unknown browser query"). Changed to `last 2 iOS versions`.
 - Bundled `style.css` was missing `text-slate-700`, `mb-2` and `leading-tight`; added them plus the classes the new default card needs. `scripts/build-style.mjs` now verifies every utility class used by components exists in the stylesheet and fails the build otherwise, so this can't silently drift again.
 - Roving-tabindex initial focus now scans the whole slot matrix instead of only the first row, so a leading empty row no longer makes every cell tabbable.
 

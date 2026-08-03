@@ -13,7 +13,7 @@ describe('browser support policy', () => {
       'last 2 Edge versions',
       'last 2 Firefox versions',
       'last 2 Safari versions',
-      'last 2 iOS Safari versions',
+      'last 2 iOS versions',
     ])
     expect(BROWSER_SUPPORT_SUMMARY).toContain('latest two stable versions')
   })
