@@ -32,7 +32,8 @@
     "build:demo": "node scripts/build-standalone.mjs",
     "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
     "@dnd-kit/core": "^6.0.0",
