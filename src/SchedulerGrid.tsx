@@ -30,6 +30,7 @@ import {
   getDefaultA11yText,
   resolveNextSlotId,
 } from './keyboard'
+import { DefaultEventCard } from './DefaultEventCard'
 
 const ALL_WEEK_DAYS: number[] = [0, 1, 2, 3, 4, 5, 6]
 
@@ -62,7 +63,6 @@ export function buildSlots<TData = unknown>(input: {
   config: SchedulerConfig
   resources: Resource<TData>[]
   locale: 'tr' | 'en'
-  timeFormat: '12h' | '24h'
 }): Slot[] {
   const result: Slot[] = []
   for (const day of ALL_WEEK_DAYS) {
@@ -125,23 +125,23 @@ export function resolveOverSlotId(input: {
   slotByGrid: Map<string, Slot>
   placements: Record<string, EventPlacement | null>
   onDebug?: (payload: {
-    branch: 'missing-over' | 'direct-slot-id' | 'slot-from-data' | 'missing-course-id' | 'missing-placement' | 'slot-from-placement'
+    branch: 'missing-over' | 'direct-slot-id' | 'slot-from-data' | 'missing-event-id' | 'missing-placement' | 'slot-from-placement'
     overId: string | null
     dataSlotId: string | null
-    inferredCourseId: string | null
+    inferredEventId: string | null
     resolvedSlotId: string | null
   }) => void
 }): string | null {
   const overId = input.over?.id ? String(input.over.id) : null
   const overData = input.over?.data.current as DragEventData | undefined
   const dataSlotId = overData?.slotId ?? null
-  const inferredCourseId = overData?.eventId ?? (overId && overId.startsWith('slot-') ? overId.slice('slot-'.length) : null)
+  const inferredEventId = overData?.eventId ?? (overId && overId.startsWith('slot-') ? overId.slice('slot-'.length) : null)
   if (!overId) {
     input.onDebug?.({
       branch: 'missing-over',
       overId: null,
       dataSlotId,
-      inferredCourseId,
+      inferredEventId,
       resolvedSlotId: null,
     })
     return null
@@ -151,7 +151,7 @@ export function resolveOverSlotId(input: {
       branch: 'direct-slot-id',
       overId,
       dataSlotId,
-      inferredCourseId,
+      inferredEventId,
       resolvedSlotId: overId,
     })
     return overId
@@ -161,28 +161,28 @@ export function resolveOverSlotId(input: {
       branch: 'slot-from-data',
       overId,
       dataSlotId,
-      inferredCourseId,
+      inferredEventId,
       resolvedSlotId: dataSlotId,
     })
     return dataSlotId
   }
-  if (!inferredCourseId) {
+  if (!inferredEventId) {
     input.onDebug?.({
-      branch: 'missing-course-id',
+      branch: 'missing-event-id',
       overId,
       dataSlotId,
-      inferredCourseId: null,
+      inferredEventId: null,
       resolvedSlotId: null,
     })
     return null
   }
-  const placement = input.placements[inferredCourseId]
+  const placement = input.placements[inferredEventId]
   if (!placement) {
     input.onDebug?.({
       branch: 'missing-placement',
       overId,
       dataSlotId,
-      inferredCourseId,
+      inferredEventId,
       resolvedSlotId: null,
     })
     return null
@@ -192,7 +192,7 @@ export function resolveOverSlotId(input: {
     branch: 'slot-from-placement',
     overId,
     dataSlotId,
-    inferredCourseId,
+    inferredEventId,
     resolvedSlotId,
   })
   return resolvedSlotId
@@ -263,12 +263,14 @@ export function buildOccupyingIndex<TEvent extends SchedulerEvent<unknown>>(inpu
 }
 
 // ---------------------------------------------------------------------------
-// SlotCell — a single droppable grid cell. Rendering of the actual placed
-// event card is entirely delegated to the host via `renderEventCard` (the
-// package only owns the droppable behavior, the shared/conflict badge, and
-// the empty-state hint text). `renderOccupyingEvent` is an optional override
-// for events that span into this slot without starting here; defaults to a
-// plain label + "continues" hint if the host doesn't supply one.
+// SlotCell — a single droppable grid cell. Rendering of the placed event card
+// is delegated to the host via `renderEventCard`; when it is omitted the cell
+// falls back to the bundled DefaultEventCard (drag handle + remove icon +
+// duration badge), so the grid is usable with zero card wiring. The package
+// itself owns the droppable behavior, the shared/conflict badge, and the
+// empty-state hint text. `renderOccupyingEvent` is an optional override for
+// events that span into this slot without starting here; defaults to a plain
+// label + "continues" hint if the host doesn't supply one.
 // ---------------------------------------------------------------------------
 
 export interface RenderEventCardContext {
@@ -282,9 +284,9 @@ export function SlotCell<TEvent extends SchedulerEvent<unknown>>({
   slot,
   status,
   slotHint,
-  startCourses,
-  occupyingCourses,
-  selectedCourseId,
+  startEvents,
+  occupyingEvents,
+  selectedEventId,
   canConvertToSwap,
   tx,
   tabIndex,
@@ -294,8 +296,8 @@ export function SlotCell<TEvent extends SchedulerEvent<unknown>>({
   renderEventCard,
   renderOccupyingEvent,
   onClickSlot,
-  onSelectCourse,
-  onRemoveCourse,
+  onSelectEvent,
+  onRemoveEvent,
   onConvertSharedSlotToSwap,
   onFocusSlot,
   onKeyDownSlot,
@@ -304,29 +306,41 @@ export function SlotCell<TEvent extends SchedulerEvent<unknown>>({
   slot: Slot
   status: SlotStatus
   slotHint: string
-  startCourses: TEvent[]
-  occupyingCourses: TEvent[]
-  selectedCourseId: string | null
+  startEvents: TEvent[]
+  occupyingEvents: TEvent[]
+  selectedEventId: string | null
   canConvertToSwap: boolean
   tx: (tr: string, en: string) => string
   tabIndex: number
   ariaLabel: string
   ariaSelected: boolean
   isFocused: boolean
-  renderEventCard: (event: TEvent, context: RenderEventCardContext) => ReactNode
+  renderEventCard?: (event: TEvent, context: RenderEventCardContext) => ReactNode
   renderOccupyingEvent?: (event: TEvent) => ReactNode
   onClickSlot: (event: { shiftKey: boolean }) => void
-  onSelectCourse: (courseId: string | null) => void
-  onRemoveCourse: (courseId: string) => void
+  onSelectEvent: (eventId: string | null) => void
+  onRemoveEvent: (eventId: string) => void
   onConvertSharedSlotToSwap: () => void
   onFocusSlot: (slotId: string) => void
   onKeyDownSlot: (event: ReactKeyboardEvent<HTMLDivElement>, slotId: string) => void
   onRegisterNode: (slotId: string, node: HTMLDivElement | null) => void
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: slot.id })
-  const hasPlacedCourse = startCourses.length > 0 || occupyingCourses.length > 0
-  const stackedCount = startCourses.length + occupyingCourses.length
-  const baseSlotClass = hasPlacedCourse ? 'border-slate-300 bg-slate-100/85' : resolveSlotClassName(status)
+  const hasPlacedEvent = startEvents.length > 0 || occupyingEvents.length > 0
+  const stackedCount = startEvents.length + occupyingEvents.length
+  const baseSlotClass = hasPlacedEvent ? 'border-slate-300 bg-slate-100/85' : resolveSlotClassName(status)
+  // When the host does not supply `renderEventCard`, fall back to the bundled
+  // DefaultEventCard so the grid renders a draggable card with a move handle,
+  // a remove icon and a duration badge out of the box.
+  const renderCard = renderEventCard ?? ((event: TEvent, context: RenderEventCardContext) => (
+    <DefaultEventCard
+      event={event}
+      selected={context.selected}
+      tx={tx}
+      onSelect={context.onSelect}
+      onRemove={context.onRemove}
+    />
+  ))
   return (
     <div
       ref={(node) => {
@@ -343,7 +357,7 @@ export function SlotCell<TEvent extends SchedulerEvent<unknown>>({
       onKeyDown={(event) => onKeyDownSlot(event, slot.id)}
       onClick={(event) => {
         const target = event.target as HTMLElement | null
-        if (target?.closest('[data-course-card="true"]')) return
+        if (target?.closest('[data-event-card="true"]')) return
         if (target?.closest('[data-shared-slot-action="true"]')) return
         onFocusSlot(slot.id)
         onClickSlot({ shiftKey: event.shiftKey })
@@ -371,23 +385,23 @@ export function SlotCell<TEvent extends SchedulerEvent<unknown>>({
           ) : null}
         </div>
       ) : null}
-      {startCourses.length > 0 || occupyingCourses.length > 0 ? (
+      {startEvents.length > 0 || occupyingEvents.length > 0 ? (
         <div className="space-y-1.5">
-          {startCourses.map((startCourse) => (
-            <div key={startCourse.id} data-course-card="true">
-              {renderEventCard(startCourse, {
+          {startEvents.map((startEvent) => (
+            <div key={startEvent.id} data-event-card="true">
+              {renderCard(startEvent, {
                 slotId: slot.id,
-                selected: selectedCourseId === startCourse.id,
-                onSelect: onSelectCourse,
-                onRemove: () => onRemoveCourse(startCourse.id),
+                selected: selectedEventId === startEvent.id,
+                onSelect: onSelectEvent,
+                onRemove: () => onRemoveEvent(startEvent.id),
               })}
             </div>
           ))}
-          {occupyingCourses.map((occupyingCourse) => (
-            <div key={occupyingCourse.id} className={`mt-2 rounded-md border px-2 py-1 text-[11px] font-semibold ${selectedCourseId === occupyingCourse.id ? 'border-blue-500 bg-blue-100 text-blue-900' : 'border-slate-400 bg-slate-100 text-slate-800'}`}>
+          {occupyingEvents.map((occupyingEvent) => (
+            <div key={occupyingEvent.id} className={`mt-2 rounded-md border px-2 py-1 text-[11px] font-semibold ${selectedEventId === occupyingEvent.id ? 'border-blue-500 bg-blue-100 text-blue-900' : 'border-slate-400 bg-slate-100 text-slate-800'}`}>
               {renderOccupyingEvent
-                ? renderOccupyingEvent(occupyingCourse)
-                : <>{occupyingCourse.label ?? occupyingCourse.id} {tx('devam ediyor', 'continues')}</>}
+                ? renderOccupyingEvent(occupyingEvent)
+                : <>{occupyingEvent.label ?? occupyingEvent.id} {tx('devam ediyor', 'continues')}</>}
             </div>
           ))}
         </div>
@@ -401,8 +415,10 @@ export function SlotCell<TEvent extends SchedulerEvent<unknown>>({
 // ---------------------------------------------------------------------------
 // SchedulerTimeGrid — the day x resource slot grid itself (time axis + columns
 // of SlotCell). DndContext, sensors, collision detection and all business-rule
-// handlers (attemptPlaceCourse, handleUnassignCourse, handleConvertSharedSlotToSwap,
-// etc.) stay in the container and are passed in here as props/callbacks.
+// handlers (onAttemptPlaceEvent, onRemoveEvent, onConvertSharedSlotToSwap, etc.)
+// stay in the container and are passed in here as props/callbacks. For the
+// batteries-included path, the optional <Scheduler> wrapper owns DndContext and
+// the drag-end resolution and drives these callbacks for you.
 // ---------------------------------------------------------------------------
 
 export interface SchedulerTimeGridColumn {
@@ -428,42 +444,46 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
   visibleColumns,
   timeRows,
   slotByGrid,
-  startCourseBySlot,
-  occupyingCourseBySlot,
+  startEventBySlot,
+  occupyingEventBySlot,
   slotFeedbackById,
   savedPlacements,
   placements,
-  selectedCourseId,
+  selectedEventId,
   isShiftPressed,
   showEmptyPlacementNotice,
   renderEventCard,
   renderOccupyingEvent,
-  onSelectCourse,
-  onRemoveCourse,
+  renderRowLabel,
+  onSelectEvent,
+  onRemoveEvent,
   onConvertSharedSlotToSwap,
-  onRequireCourseSelection,
-  onAttemptPlaceCourse,
+  onRequireEventSelection,
+  onAttemptPlaceEvent,
   a11yText,
+  timeFormat = '24h',
 }: {
   tx: (tr: string, en: string) => string
   visibleColumns: SchedulerTimeGridColumn[]
   timeRows: SchedulerTimeGridRow[]
+  timeFormat?: '12h' | '24h'
   slotByGrid: Map<string, Slot>
-  startCourseBySlot: Map<string, TEvent[]>
-  occupyingCourseBySlot: Map<string, TEvent[]>
+  startEventBySlot: Map<string, TEvent[]>
+  occupyingEventBySlot: Map<string, TEvent[]>
   slotFeedbackById: Map<string, SchedulerSlotFeedback>
   savedPlacements: Record<string, EventPlacement | null>
   placements: Record<string, EventPlacement | null>
-  selectedCourseId: string | null
+  selectedEventId: string | null
   isShiftPressed: boolean
   showEmptyPlacementNotice: boolean
-  renderEventCard: (event: TEvent, context: RenderEventCardContext) => ReactNode
+  renderEventCard?: (event: TEvent, context: RenderEventCardContext) => ReactNode
   renderOccupyingEvent?: (event: TEvent) => ReactNode
-  onSelectCourse: (courseId: string | null) => void
-  onRemoveCourse: (courseId: string) => void
-  onConvertSharedSlotToSwap: (slotCourseIds: string[]) => void
-  onRequireCourseSelection: () => void
-  onAttemptPlaceCourse: (input: { courseId: string; slotId: string; forceSharedSlot: boolean }) => void
+  renderRowLabel?: (row: SchedulerTimeGridRow) => ReactNode
+  onSelectEvent: (eventId: string | null) => void
+  onRemoveEvent: (eventId: string) => void
+  onConvertSharedSlotToSwap: (slotEventIds: string[]) => void
+  onRequireEventSelection: () => void
+  onAttemptPlaceEvent: (input: { eventId: string; slotId: string; forceSharedSlot: boolean }) => void
   a11yText?: SchedulerA11yText
 }) {
   const resolvedA11yText = a11yText ?? getDefaultA11yText()
@@ -473,7 +493,12 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
     () => buildSlotMatrix({ visibleColumns, timeRows, slotByGrid }),
     [slotByGrid, timeRows, visibleColumns],
   )
-  const firstSlotId = slotMatrix.cells[0]?.find((slot) => slot != null)?.id ?? null
+  // First focusable slot: scan the whole matrix, not just row 0 — otherwise a
+  // leading all-empty row would leave focus null and break roving tabindex.
+  const firstSlotId = slotMatrix.cells.reduce<string | null>(
+    (found, row) => found ?? row.find((slot) => slot != null)?.id ?? null,
+    null,
+  )
   const [focusedSlotId, setFocusedSlotId] = useState<string | null>(firstSlotId)
   const [liveMessage, setLiveMessage] = useState<string>('')
   const slotNodeById = useRef(new Map<string, HTMLDivElement | null>())
@@ -507,13 +532,13 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
     }
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
-      if (!selectedCourseId) {
-        onRequireCourseSelection()
+      if (!selectedEventId) {
+        onRequireEventSelection()
         announce(resolvedA11yText('selectionRequired'))
         return
       }
-      onAttemptPlaceCourse({
-        courseId: selectedCourseId,
+      onAttemptPlaceEvent({
+        eventId: selectedEventId,
         slotId,
         forceSharedSlot: Boolean(event.shiftKey),
       })
@@ -522,15 +547,15 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
     }
     if (event.key === 'Escape') {
       event.preventDefault()
-      onSelectCourse(null)
+      onSelectEvent(null)
       announce(resolvedA11yText('selectionCleared'))
       return
     }
     if (event.key === 'Backspace' || event.key === 'Delete') {
-      if (!selectedCourseId) return
+      if (!selectedEventId) return
       event.preventDefault()
-      onRemoveCourse(selectedCourseId)
-      onSelectCourse(null)
+      onRemoveEvent(selectedEventId)
+      onSelectEvent(null)
       announce(resolvedA11yText('removeRequested'))
     }
   }
@@ -544,7 +569,7 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
       </div>
       {visibleColumns.length === 0 ? (
         <div className="rounded border border-dashed border-slate-300 p-3 text-sm text-slate-500">
-          {tx('Görüntülemek için en az bir gün ve bir mekan seçin.', 'Select at least one day and one room.')}
+          {tx('Görüntülemek için en az bir gün ve bir kaynak seçin.', 'Select at least one day and one resource.')}
         </div>
       ) : (
         <div
@@ -569,7 +594,7 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
             <Fragment key={row.startMinute}>
               <div className="sticky left-0 z-10 rounded border border-slate-200 bg-white px-2 py-1 text-xs font-semibold">
                 <div className="flex min-h-[110px] items-center justify-center text-center leading-tight text-slate-700">
-                  <span>{row.label}</span>
+                  {renderRowLabel ? renderRowLabel(row) : <span>{row.label}</span>}
                 </div>
               </div>
               {visibleColumns.map((column) => {
@@ -577,17 +602,17 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
                 if (!slot) {
                   return <div key={`${column.weekday}-${column.resourceId}-${row.startMinute}`} className="rounded border border-slate-200 bg-slate-50/50" />
                 }
-                const startCourses = startCourseBySlot.get(slot.id) ?? []
-                const occupyingCourses = occupyingCourseBySlot.get(slot.id) ?? []
+                const startEvents = startEventBySlot.get(slot.id) ?? []
+                const occupyingEvents = occupyingEventBySlot.get(slot.id) ?? []
                 const feedback = slotFeedbackById.get(slot.id) ?? {
                   status: 'idle' as SlotStatus,
-                  message: tx('Seçili dersi bu slota bırakın.', 'Drop selected course into this slot.'),
+                  message: tx('Seçili öğeyi bu slota bırakın.', 'Drop the selected item here.'),
                 }
-                const slotCourseIds = [...startCourses.map((item) => item.id), ...occupyingCourses.map((item) => item.id)]
-                const canConvertToSwap = slotCourseIds.length === 2
-                  && slotCourseIds.every((id) => savedPlacements[id] != null)
-                  && slotCourseIds.some((id) => isSamePlacement(savedPlacements[id] ?? null, placements[id] ?? null))
-                  && slotCourseIds.some((id) => !isSamePlacement(savedPlacements[id] ?? null, placements[id] ?? null))
+                const slotEventIds = [...startEvents.map((item) => item.id), ...occupyingEvents.map((item) => item.id)]
+                const canConvertToSwap = slotEventIds.length === 2
+                  && slotEventIds.every((id) => savedPlacements[id] != null)
+                  && slotEventIds.some((id) => isSamePlacement(savedPlacements[id] ?? null, placements[id] ?? null))
+                  && slotEventIds.some((id) => !isSamePlacement(savedPlacements[id] ?? null, placements[id] ?? null))
                 const isFocused = focusedSlotId === slot.id
                 return (
                   <SlotCell
@@ -595,9 +620,9 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
                     slot={slot}
                     status={feedback.status}
                     slotHint={feedback.message}
-                    startCourses={startCourses}
-                    occupyingCourses={occupyingCourses}
-                    selectedCourseId={selectedCourseId}
+                    startEvents={startEvents}
+                    occupyingEvents={occupyingEvents}
+                    selectedEventId={selectedEventId}
                     canConvertToSwap={canConvertToSwap}
                     tx={tx}
                     tabIndex={isFocused || focusedSlotId == null ? 0 : -1}
@@ -605,16 +630,17 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
                       slot,
                       status: feedback.status,
                       selected: isFocused,
-                      occupied: startCourses.length > 0 || occupyingCourses.length > 0,
+                      occupied: startEvents.length > 0 || occupyingEvents.length > 0,
+                      timeFormat,
                       a11yText: resolvedA11yText,
                     })}
                     ariaSelected={isFocused}
                     isFocused={isFocused}
                     renderEventCard={renderEventCard}
                     renderOccupyingEvent={renderOccupyingEvent}
-                    onSelectCourse={onSelectCourse}
-                    onRemoveCourse={onRemoveCourse}
-                    onConvertSharedSlotToSwap={() => onConvertSharedSlotToSwap(slotCourseIds)}
+                    onSelectEvent={onSelectEvent}
+                    onRemoveEvent={onRemoveEvent}
+                    onConvertSharedSlotToSwap={() => onConvertSharedSlotToSwap(slotEventIds)}
                     onFocusSlot={(slotId) => {
                       setFocusedSlotId(slotId)
                       const focusedSlot = slotByGrid.get(`${column.weekday}-${column.resourceId}-${row.startMinute}`)
@@ -623,7 +649,8 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
                           slot: focusedSlot,
                           status: feedback.status,
                           selected: true,
-                          occupied: startCourses.length > 0 || occupyingCourses.length > 0,
+                          occupied: startEvents.length > 0 || occupyingEvents.length > 0,
+                          timeFormat,
                           a11yText: resolvedA11yText,
                         }))
                       }
@@ -633,13 +660,13 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
                       slotNodeById.current.set(slotId, node)
                     }}
                     onClickSlot={(event) => {
-                      if (!selectedCourseId) {
-                        onRequireCourseSelection()
+                      if (!selectedEventId) {
+                        onRequireEventSelection()
                         announce(resolvedA11yText('selectionRequired'))
                         return
                       }
                       const clickShift = Boolean(event.shiftKey) || isShiftPressed
-                      onAttemptPlaceCourse({ courseId: selectedCourseId, slotId: slot.id, forceSharedSlot: clickShift })
+                      onAttemptPlaceEvent({ eventId: selectedEventId, slotId: slot.id, forceSharedSlot: clickShift })
                       announce(resolvedA11yText('placementRequested'))
                     }}
                   />
@@ -651,7 +678,7 @@ export function SchedulerTimeGrid<TEvent extends SchedulerEvent<unknown>>({
       )}
       {showEmptyPlacementNotice ? (
         <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-          {tx('Seçili sınıflarda henüz atanmış ders görünmüyor. Farklı sınıflar ekleyebilirsiniz.', 'No placed course is visible in selected classrooms yet. You can add different classrooms.')}
+          {tx('Seçili kaynaklarda henüz yerleştirilmiş öğe yok. Farklı kaynaklar ekleyebilirsiniz.', 'No placed item is visible in the selected resources yet. You can add different resources.')}
         </div>
       ) : null}
     </div>

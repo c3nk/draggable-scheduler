@@ -40,8 +40,19 @@ export {
 } from './PresetToolbar'
 
 export {
+  DefaultEventCard,
+  formatDurationLabel,
+} from './DefaultEventCard'
+
+export {
+  Scheduler,
+  schedulerCollisionDetection,
+} from './Scheduler'
+
+export {
   createSchedulerA11yText,
   getDefaultA11yText,
+  formatTimeOfDay,
 } from './keyboard'
 
 export type {
@@ -61,3 +72,13 @@ export type {
   Preset,
   PresetToolbarProps,
 } from './PresetToolbar'
+
+export type {
+  DefaultEventCardProps,
+} from './DefaultEventCard'
+
+export type {
+  SchedulerProps,
+  DropTarget,
+  DropEvaluation,
+} from './Scheduler'

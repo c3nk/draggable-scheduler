@@ -3,7 +3,7 @@ export const SUPPORTED_BROWSER_TARGETS = [
   'last 2 Edge versions',
   'last 2 Firefox versions',
   'last 2 Safari versions',
-  'last 2 iOS Safari versions',
+  'last 2 iOS versions',
 ] as const
 
 export const BROWSER_SUPPORT_SUMMARY =

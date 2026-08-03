@@ -86,7 +86,6 @@ describe('slot indexes', () => {
       config,
       resources,
       locale: 'en',
-      timeFormat: '24h',
     })
 
     expect(slots).toHaveLength(7 * resources.length * 6)
@@ -106,7 +105,6 @@ describe('slot indexes', () => {
       config,
       resources,
       locale: 'en',
-      timeFormat: '24h',
     })
     const startIndex = buildStartIndex({ events, placements, slots })
     const occupyingIndex = buildOccupyingIndex({ events, placements, slots })
@@ -123,7 +121,6 @@ describe('drag target resolution', () => {
       config,
       resources,
       locale: 'en',
-      timeFormat: '24h',
     })
     const { slotById, slotByGrid } = buildSlotMaps(slots)
 

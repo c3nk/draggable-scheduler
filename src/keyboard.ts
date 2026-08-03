@@ -89,10 +89,15 @@ export function resolveNextSlotId(input: {
   }
 }
 
-function formatTime(minuteOfDay: number): string {
-  const hours = Math.floor(minuteOfDay / 60)
-  const minutes = minuteOfDay % 60
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+export function formatTimeOfDay(minute: number, timeFormat: '12h' | '24h' = '24h'): string {
+  const hours24 = Math.floor(minute / 60)
+  const minutes = String(minute % 60).padStart(2, '0')
+  if (timeFormat === '12h') {
+    const period = hours24 < 12 ? 'AM' : 'PM'
+    const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12
+    return `${hours12}:${minutes} ${period}`
+  }
+  return `${String(hours24).padStart(2, '0')}:${minutes}`
 }
 
 const DEFAULT_A11Y_DICTIONARIES: Record<'en' | 'tr', SchedulerA11yDictionary> = {
@@ -164,6 +169,7 @@ export function buildSlotA11yLabel(input: {
   status: string
   selected: boolean
   occupied: boolean
+  timeFormat?: '12h' | '24h'
   a11yText?: SchedulerA11yText
 }): string {
   const a11yText = input.a11yText ?? createSchedulerA11yText('en')
@@ -178,7 +184,7 @@ export function buildSlotA11yLabel(input: {
   return a11yText('slotLabel', {
     dayLabel: input.slot.dayLabel,
     resourceLabel: input.slot.resourceLabel,
-    range: `${formatTime(input.slot.startMinute)}-${formatTime(input.slot.endMinute)}`,
+    range: `${formatTimeOfDay(input.slot.startMinute, input.timeFormat)}-${formatTimeOfDay(input.slot.endMinute, input.timeFormat)}`,
     status: statusText,
     selected: selectionText,
   })

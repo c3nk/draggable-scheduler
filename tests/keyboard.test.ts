@@ -6,6 +6,7 @@ import {
   buildSlotA11yLabel,
   buildSlotMatrix,
   createSchedulerA11yText,
+  formatTimeOfDay,
   resolveNextSlotId,
 } from '../src/keyboard'
 import { SchedulerTimeGrid } from '../src/SchedulerGrid'
@@ -40,6 +41,23 @@ const slotByGrid = new Map<string, Slot>([
   ['1-room-a-570', { id: 'slot-c', weekday: 1, resourceId: 'room-a', resourceLabel: 'Room A', startMinute: 570, endMinute: 600, dayLabel: 'Mon' }],
   ['1-room-b-570', { id: 'slot-d', weekday: 1, resourceId: 'room-b', resourceLabel: 'Room B', startMinute: 570, endMinute: 600, dayLabel: 'Mon' }],
 ])
+
+describe('formatTimeOfDay', () => {
+  it('formats 24h by default and 12h with AM/PM on request', () => {
+    expect(formatTimeOfDay(540)).toBe('09:00')
+    expect(formatTimeOfDay(540, '24h')).toBe('09:00')
+    expect(formatTimeOfDay(540, '12h')).toBe('9:00 AM')
+    expect(formatTimeOfDay(0, '12h')).toBe('12:00 AM')
+    expect(formatTimeOfDay(12 * 60, '12h')).toBe('12:00 PM')
+    expect(formatTimeOfDay(13 * 60 + 30, '12h')).toBe('1:30 PM')
+  })
+
+  it('threads the time format into slot a11y labels', () => {
+    const slot = slotByGrid.get('1-room-a-540') as Slot
+    expect(buildSlotA11yLabel({ slot, status: 'available', selected: false, occupied: false, timeFormat: '12h' }))
+      .toContain('9:00 AM')
+  })
+})
 
 describe('keyboard helpers', () => {
   it('builds slot matrices and resolves arrow-key navigation', () => {
@@ -94,20 +112,20 @@ describe('SchedulerTimeGrid keyboard surface', () => {
           visibleColumns,
           timeRows,
           slotByGrid,
-          startCourseBySlot: new Map([[slotByGrid.get('1-room-a-540')!.id, events]]),
-          occupyingCourseBySlot: new Map(),
+          startEventBySlot: new Map([[slotByGrid.get('1-room-a-540')!.id, events]]),
+          occupyingEventBySlot: new Map(),
           slotFeedbackById: new Map(),
           savedPlacements: placements,
           placements,
-          selectedCourseId: null,
+          selectedEventId: null,
           isShiftPressed: false,
           showEmptyPlacementNotice: false,
           renderEventCard: (event: SchedulerEvent) => createElement('span', null, event.label),
-          onSelectCourse: () => {},
-          onRemoveCourse: () => {},
+          onSelectEvent: () => {},
+          onRemoveEvent: () => {},
           onConvertSharedSlotToSwap: () => {},
-          onRequireCourseSelection: () => {},
-          onAttemptPlaceCourse: () => {},
+          onRequireEventSelection: () => {},
+          onAttemptPlaceEvent: () => {},
         }),
       ),
     )

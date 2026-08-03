@@ -1,6 +1,6 @@
 {
   "name": "draggable-scheduler",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "A React grid component for weekly resource scheduling with drag-and-drop, built on dnd-kit.",
   "license": "Apache-2.0",
   "type": "module",
@@ -25,13 +25,15 @@
     "last 2 Edge versions",
     "last 2 Firefox versions",
     "last 2 Safari versions",
-    "last 2 iOS Safari versions"
+    "last 2 iOS versions"
   ],
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --sourcemap && node scripts/build-style.mjs",
+    "build:demo": "node scripts/build-standalone.mjs",
     "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
     "@dnd-kit/core": "^6.0.0",

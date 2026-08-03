@@ -24,16 +24,24 @@ Originally developed for and used in production by [Plansoar](https://plansoar.c
 
 Most scheduling UI libraries try to own your business rules — conflict detection, validation, persistence — bundled with the rendering. That coupling is exactly what makes them hard to adapt: your conflict rules are never quite the library's conflict rules.
 
-`draggable-scheduler` takes the opposite approach: it only renders, drags, scrolls, and selects. It notifies your app via callbacks (`onEventMove`, `onBeforeMove`, `onSelectionChange`, ...) and your app decides everything else. This keeps the library small, predictable, and usable well outside its original domain.
+`draggable-scheduler` takes the opposite approach: it only renders, drags, scrolls, and selects. Your app decides everything else. This keeps the library small, predictable, and usable well outside its original domain.
+
+It comes in two layers you can pick between:
+
+- **`<Scheduler>`** — batteries-included. It owns the `DndContext`, sensors, collision detection and drag-end resolution; you pass data + rules and it drives `onBeforeMove` / `onEventMove` / `onEventRemove` for you.
+- **`<SchedulerTimeGrid>`** — the low-level grid. You bring your own `DndContext` and resolve drops yourself. Use this when you need full control (a tuned collision strategy, async rule engines, swap/unassign workflows).
 
 ## Features
 
 - Weekday x resource grid rendering with a customizable time axis
 - Drag-and-drop event placement via `@dnd-kit/core`
+- A bundled, draggable **`DefaultEventCard`** with the UI affordances you expect — a move/drag handle, a remove (delete) icon, a selection frame and a duration badge — all with inline SVG icons and no icon dependency (draggable from the whole card by default; `dragActivator="handle"` to require the grip)
+- 12h / 24h time axis via a single `timeFormat` prop (drives both the visible labels and the screen-reader slot ranges)
 - Slot selection, shared-slot ("double-booked") indication, and swap-candidate detection
-- A `renderEventCard` escape hatch — you fully control how a placed event looks and whether/how it's draggable
+- A `renderEventCard` escape hatch — override the default card entirely, or wrap it and pass your domain fields as `children`
 - Zero business logic: no conflict detection, no persistence, no fetching, no opinions about your domain
 - A generic `Resource<TData>`/`SchedulerEvent<TData>` model — attach any data shape and read it back in your own rendering
+- Keyboard navigation + generic, overridable screen-reader text
 
 ## Install
 
@@ -76,97 +84,76 @@ The library never reads `data` itself — it's yours. Put your course/meeting/sh
 
 ## Usage
 
+The quickest path is the `<Scheduler>` wrapper: give it data, a config, and an `onEventMove`, and it handles the drag-and-drop plumbing for you.
+
 ```tsx
 import { useState } from 'react'
-import { DndContext } from '@dnd-kit/core'
-import {
-  SchedulerTimeGrid,
-  PresetToolbar,
-  buildSlots,
-  buildStartIndex,
-  buildOccupyingIndex,
-  usePlacementHistory,
-} from 'draggable-scheduler'
+import { Scheduler, DefaultEventCard } from 'draggable-scheduler'
 import 'draggable-scheduler/style.css'
-import type { Resource, SchedulerEvent, EventPlacement } from 'draggable-scheduler'
+import type {
+  Resource,
+  SchedulerEvent,
+  SchedulerConfig,
+  EventPlacement,
+  DropTarget,
+} from 'draggable-scheduler'
 
 interface MeetingData { title: string; organizer: string }
-type MeetingEvent = SchedulerEvent<MeetingData> & { data: MeetingData }
+type MeetingEvent = SchedulerEvent<MeetingData>
+
+const resources: Resource[] = [{ id: 'room-1', label: 'Room 101' }]
+const events: MeetingEvent[] = [
+  { id: 'evt-1', durationMinutes: 60, label: 'Standup', data: { title: 'Standup', organizer: 'Alice' } },
+]
+const config: SchedulerConfig = {
+  workDays: [1, 2, 3, 4, 5], weekStartDay: 1,
+  workStartMinute: 8 * 60, workEndMinute: 18 * 60, slotStepMinutes: 30,
+}
 
 function MyScheduler() {
-  const resources: Resource<{ building: string }>[] = [
-    { id: 'room-1', label: 'Room 101', data: { building: 'A' } },
-  ]
-  const events: MeetingEvent[] = [
-    { id: 'evt-1', durationMinutes: 60, data: { title: 'Standup', organizer: 'Alice' } },
-  ]
-  const placements: Record<string, EventPlacement | null> = {
+  const [placements, setPlacements] = useState<Record<string, EventPlacement | null>>({
     'evt-1': { eventId: 'evt-1', resourceId: 'room-1', weekday: 1, startMinute: 9 * 60 },
-  }
-  const history = usePlacementHistory(placements)
-  const [activePresetId, setActivePresetId] = useState<string | null>('all')
-
-  const presets = [
-    { id: 'all', label: 'All', state: { view: 'all' }, description: 'Show everything' },
-    { id: 'today', label: 'Today', state: { view: 'today' }, description: 'Show today only' },
-  ]
-
-  const config = { workDays: [1, 2, 3, 4, 5], weekStartDay: 1, workStartMinute: 8 * 60, workEndMinute: 18 * 60, slotStepMinutes: 30 }
-  const slots = buildSlots({ config, resources, locale: 'en', timeFormat: '24h' })
-  const eventsBySlot = buildStartIndex({ events, placements, slots })
-  const occupyingBySlot = buildOccupyingIndex({ events, placements, slots })
+  })
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
 
   return (
-    <>
-      <PresetToolbar
-        tx={(_tr, en) => en}
-        presets={presets}
-        activePresetId={activePresetId}
-        onPresetSelect={(preset) => {
-          setActivePresetId(preset.id)
-          // your app decides how to apply preset.state
-        }}
-        onClearSelection={() => setActivePresetId(null)}
-      />
-
-      <DndContext onDragEnd={/* resolve slot, call your onBeforeMove, then onEventMove */ () => {}}>
-        <SchedulerTimeGrid
-          tx={(_tr, en) => en}
-          visibleColumns={/* derive from resources x config.workDays */ []}
-          timeRows={/* derive from config */ []}
-          slotByGrid={new Map(slots.map((s) => [`${s.weekday}-${s.resourceId}-${s.startMinute}`, s]))}
-          startCourseBySlot={eventsBySlot}
-          occupyingCourseBySlot={occupyingBySlot}
-          slotFeedbackById={new Map()}
-          savedPlacements={placements}
-          placements={placements}
-          selectedCourseId={null}
-          isShiftPressed={false}
-          showEmptyPlacementNotice={false}
-          renderEventCard={(event, ctx) => (
-            <div onClick={() => ctx.onSelect(event.id)}>{event.data.title}</div>
-          )}
-          onSelectCourse={() => {}}
-          onRemoveCourse={() => {}}
-          onConvertSharedSlotToSwap={() => {}}
-          onRequireCourseSelection={() => {}}
-          onAttemptPlaceCourse={(input) => {
-            // your app decides: call onBeforeMove-style validation here, then persist.
-            history.setPlacements((current) => ({
-              ...current,
-              [input.courseId]: { eventId: input.courseId, resourceId: 'room-1', weekday: 1, startMinute: 9 * 60 },
-            }))
-          }}
-        />
-      </DndContext>
-    </>
+    <Scheduler<MeetingEvent>
+      resources={resources}
+      events={events}
+      placements={placements}
+      config={config}
+      selectedEventId={selectedEventId}
+      onSelectEvent={setSelectedEventId}
+      // Your business rules. Return { allowed: false, message } to reject a drop.
+      onBeforeMove={(_eventId, _target: DropTarget) => ({ allowed: true })}
+      onEventMove={(eventId, target) => {
+        setPlacements((current) => ({
+          ...current,
+          [eventId]: { eventId, resourceId: target.resourceId, weekday: target.weekday, startMinute: target.startMinute },
+        }))
+      }}
+      onEventRemove={(eventId) => setPlacements((current) => ({ ...current, [eventId]: null }))}
+      // Optional: omit renderEventCard to get the bundled default card as-is.
+      // Here we keep its affordances (move handle, delete icon, duration) and add domain fields.
+      renderEventCard={(event, ctx) => (
+        <DefaultEventCard event={event} selected={ctx.selected} onSelect={ctx.onSelect} onRemove={ctx.onRemove}>
+          <div className="text-sm font-semibold">{event.data?.title}</div>
+          <div className="text-xs text-slate-600">{event.data?.organizer}</div>
+        </DefaultEventCard>
+      )}
+    />
   )
 }
 ```
 
-A fuller worked example lives in [`examples/basic/BasicSchedulerExample.tsx`](./examples/basic/BasicSchedulerExample.tsx).
+Omit `renderEventCard` entirely and each placed event renders with the bundled `DefaultEventCard` — a draggable card with a move handle, a delete icon and a duration badge — out of the box.
 
-If you want a no-install preview you can open directly in a browser, download [`examples/standalone-demo.html`](./examples/standalone-demo.html). It is a single-file HTML demo with sample content and no build step.
+Two worked examples ship in the repo:
+
+- [`examples/wrapper/WrapperSchedulerExample.tsx`](./examples/wrapper/WrapperSchedulerExample.tsx) — the `<Scheduler>` path above.
+- [`examples/basic/BasicSchedulerExample.tsx`](./examples/basic/BasicSchedulerExample.tsx) — the low-level `<SchedulerTimeGrid>` path with a host-owned `DndContext` and a fully custom card.
+
+If you want a no-install preview you can open directly in a browser, download [`examples/standalone-demo.html`](./examples/standalone-demo.html). It is a single self-contained file (React, dnd-kit and this package inlined — no network, no build step for the viewer) built from the real package via `npm run build:demo` (source in [`examples/standalone/main.tsx`](./examples/standalone/main.tsx)), so it shows the actual `DefaultEventCard` (move handle + delete icon) and `<Scheduler>` Shift behavior.
 
 The package ships a precompiled stylesheet at `draggable-scheduler/style.css`, which you should import once in your app if you want the grid to render with the bundled defaults.
 
@@ -204,18 +191,33 @@ Use the helper when you want generic screen-reader wording with a few app-specif
 ## Public API
 
 ```
-Resource<TData>, SchedulerEvent<TData>, EventPlacement, Slot, SchedulerConfig, DragEventData, SlotStatus
+Types
+  Resource<TData>, SchedulerEvent<TData>, EventPlacement, Slot, SchedulerConfig,
+  DragEventData, SlotStatus, DropTarget, DropEvaluation
 
-SchedulerTimeGrid<TEvent>   — the grid itself (time axis + resource columns + slot cells)
-SlotCell<TEvent>            — a single droppable cell (used internally by SchedulerTimeGrid)
+Components
+  Scheduler<TEvent>          — batteries-included wrapper (owns DndContext + drag resolution)
+                               props: resources, events, placements, config, onEventMove (required),
+                               onBeforeMove?, onEventRemove?, onConvertSharedSlotToSwap?,
+                               selectedEventId?, onSelectEvent?, slotFeedbackById?, renderEventCard?, ...
+  SchedulerTimeGrid<TEvent>  — low-level grid (host owns DndContext)
+                               props: visibleColumns, timeRows, slotByGrid, startEventBySlot,
+                               occupyingEventBySlot, placements, savedPlacements, selectedEventId,
+                               onSelectEvent, onRemoveEvent, onAttemptPlaceEvent, onRequireEventSelection,
+                               onConvertSharedSlotToSwap, renderEventCard?, renderOccupyingEvent?, ...
+  SlotCell<TEvent>           — a single droppable cell (used internally by SchedulerTimeGrid)
+  DefaultEventCard<TEvent>   — bundled draggable card (move handle, delete icon, duration badge, children)
+  PresetToolbar<TState>
 
-buildSlots, buildOrderedWeekdays, buildStartIndex, buildOccupyingIndex, resolveOverSlotId
-isOverlap, clonePlacements, isSamePlacement, extractEventId, resolveSlotClassName, formatWeekday
-usePlacementHistory, createPlacementHistory, setPlacementHistory, undoPlacementHistory, clearPlacementHistory
-Preset<TState>, PresetToolbar
+Helpers
+  schedulerCollisionDetection, formatDurationLabel
+  buildSlots, buildOrderedWeekdays, buildStartIndex, buildOccupyingIndex, resolveOverSlotId
+  isOverlap, clonePlacements, isSamePlacement, extractEventId, resolveSlotClassName, formatWeekday
+  usePlacementHistory, createPlacementHistory, setPlacementHistory, undoPlacementHistory, clearPlacementHistory
+  createSchedulerA11yText, getDefaultA11yText
 ```
 
-Everything about *why* a move is allowed, *what* a conflict means, and *how* it's persisted is your application's job. This library renders, drags, scrolls, and selects — it notifies you via callbacks and never makes a business decision on its own.
+Everything about *why* a move is allowed, *what* a conflict means, and *how* it's persisted is your application's job — `<Scheduler>` surfaces those decisions as `onBeforeMove`/`onEventMove` callbacks, and `<SchedulerTimeGrid>` leaves the drag wiring to you entirely. The library renders, drags, scrolls, and selects; it never makes a business decision on its own.
 
 ## Philosophy
 

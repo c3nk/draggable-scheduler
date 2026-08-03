@@ -126,10 +126,10 @@ function DemoDraggableCard({
 
 export function BasicSchedulerExample() {
   const [placements, setPlacements] = useState<Record<string, EventPlacement | null>>(initialPlacements)
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(events[0]?.id ?? null)
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(events[0]?.id ?? null)
 
   const slots = useMemo(
-    () => buildSlots({ config, resources, locale: 'en', timeFormat: '24h' }),
+    () => buildSlots({ config, resources, locale: 'en' }),
     [],
   )
   const slotById = useMemo(() => new Map(slots.map((slot) => [slot.id, slot] as const)), [slots])
@@ -137,11 +137,11 @@ export function BasicSchedulerExample() {
     () => new Map(slots.map((slot) => [`${slot.weekday}-${slot.resourceId}-${slot.startMinute}`, slot] as const)),
     [slots],
   )
-  const startCourseBySlot = useMemo(
+  const startEventBySlot = useMemo(
     () => buildStartIndex({ events, placements, slots }),
     [placements, slots],
   )
-  const occupyingCourseBySlot = useMemo(
+  const occupyingEventBySlot = useMemo(
     () => buildOccupyingIndex({ events, placements, slots }),
     [placements, slots],
   )
@@ -185,7 +185,7 @@ export function BasicSchedulerExample() {
     })
     if (!eventId || !slotId) return
     commitPlacement(eventId, slotId)
-    setSelectedCourseId(eventId)
+    setSelectedEventId(eventId)
   }
 
   return (
@@ -203,7 +203,7 @@ export function BasicSchedulerExample() {
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
-          Selected event: <span className="font-semibold">{selectedCourseId ?? 'none'}</span>
+          Selected event: <span className="font-semibold">{selectedEventId ?? 'none'}</span>
         </div>
       </aside>
 
@@ -213,12 +213,12 @@ export function BasicSchedulerExample() {
           visibleColumns={visibleColumns}
           timeRows={timeRows}
           slotByGrid={slotByGrid}
-          startCourseBySlot={startCourseBySlot}
-          occupyingCourseBySlot={occupyingCourseBySlot}
+          startEventBySlot={startEventBySlot}
+          occupyingEventBySlot={occupyingEventBySlot}
           slotFeedbackById={new Map()}
           savedPlacements={initialPlacements}
           placements={placements}
-          selectedCourseId={selectedCourseId}
+          selectedEventId={selectedEventId}
           isShiftPressed={false}
           showEmptyPlacementNotice={false}
           renderEventCard={(event, context) => (
@@ -230,16 +230,16 @@ export function BasicSchedulerExample() {
             />
           )}
           renderOccupyingEvent={(event) => <span>{event.label}</span>}
-          onSelectCourse={setSelectedCourseId}
-          onRemoveCourse={(eventId) => {
+          onSelectEvent={setSelectedEventId}
+          onRemoveEvent={(eventId) => {
             setPlacements((current) => ({ ...current, [eventId]: null }))
-            if (selectedCourseId === eventId) setSelectedCourseId(null)
+            if (selectedEventId === eventId) setSelectedEventId(null)
           }}
           onConvertSharedSlotToSwap={() => {}}
-          onRequireCourseSelection={() => {}}
-          onAttemptPlaceCourse={({ courseId, slotId }) => {
-            commitPlacement(courseId, slotId)
-            setSelectedCourseId(courseId)
+          onRequireEventSelection={() => {}}
+          onAttemptPlaceEvent={({ eventId, slotId }) => {
+            commitPlacement(eventId, slotId)
+            setSelectedEventId(eventId)
           }}
         />
       </DndContext>
